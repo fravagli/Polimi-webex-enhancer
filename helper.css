@@ -1,0 +1,3676 @@
+/* ==========================================================================
+   PoliMi Webex Enhancer - Master Liquid Glass Theme (iOS 18 / visionOS concept)
+   Ultra-refined glassmorphism, dynamic bottom docking, tactile micro-interactions
+   ========================================================================== */
+
+/* --- HUD Toast (On-Screen Display) --- */
+.webex-helper-hud {
+    position: fixed;
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.95);
+    background: rgba(13, 19, 33, 0.82);
+    backdrop-filter: blur(32px) saturate(210%);
+    -webkit-backdrop-filter: blur(32px) saturate(210%);
+    color: #ffffff;
+    padding: 12px 28px;
+    border-radius: 9999px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid rgba(255, 255, 255, 0.38);
+    z-index: 2147483647;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-helper-hud.visible {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+.webex-helper-hud-icon {
+    font-size: 20px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Native Control Bar Injected Buttons (-30s, +30s, Speed, Boost) --- */
+.webex-injected-native-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #f1f5f9 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 100% !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    margin: 0 2px !important;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    vertical-align: middle !important;
+    opacity: 0.88;
+}
+
+.webex-injected-native-btn:hover {
+    color: #38bdf8 !important;
+    transform: scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5));
+}
+
+.webex-injected-native-btn:active {
+    transform: scale(0.95);
+}
+
+.webex-injected-native-btn svg {
+    display: block;
+    stroke: currentColor;
+    transition: stroke 0.18s ease;
+}
+
+/* Injected Speed Pill inside Native Bar */
+.webex-native-speed-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin: 0 4px;
+    vertical-align: middle;
+}
+
+.webex-native-speed-btn {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid rgba(255, 255, 255, 0.32);
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.webex-native-speed-btn:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #ffffff;
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+}
+
+.webex-native-speed-menu {
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    background: rgba(13, 19, 33, 0.92);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 2147483647;
+    min-width: 95px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-native-speed-menu.visible {
+    display: flex;
+    transform: translateX(-50%) translateY(0);
+}
+
+.webex-native-speed-option {
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    transform: scale(1);
+}
+
+.webex-native-speed-option:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(14, 165, 233, 0.25)) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    transform: scale(1.12) !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+}
+
+.webex-native-speed-option.active {
+    background: #38bdf8 !important;
+    color: #0f172a !important;
+    font-weight: 700;
+    transform: scale(1.05) !important;
+}
+
+/* Injected Audio Booster Pill inside Native Bar */
+.webex-native-boost-btn {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    color: #f1f5f9;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    cursor: pointer;
+    margin: 0 4px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.webex-native-boost-btn:hover, .webex-native-boost-btn.boosted {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    transform: scale(1.05);
+}
+
+/* ==========================================================================
+   Docked Liquid Glass Toolbar - Always Visible & Ergonomically Docked
+   ========================================================================== */
+.webex-helper-toolbar-container {
+    position: fixed !important;
+    bottom: 18px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 2147483640 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
+    width: min(calc(100vw - 32px), 960px) !important;
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease !important;
+    pointer-events: auto !important;
+}
+
+/* Floating Capsule when Collapsed */
+.webex-helper-pill {
+    background: rgba(13, 19, 33, 0.82);
+    backdrop-filter: blur(32px) saturate(210%);
+    -webkit-backdrop-filter: blur(32px) saturate(210%);
+    color: #38bdf8;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid rgba(255, 255, 255, 0.36);
+    border-radius: 9999px;
+    padding: 9px 22px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.webex-helper-pill:hover {
+    background: rgba(22, 32, 54, 0.92);
+    border-color: #38bdf8;
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.webex-helper-pill:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Expanded Liquid Glass Master Panel */
+.webex-helper-panel {
+    display: flex;
+    width: 100%;
+    background: rgba(10, 16, 30, 0.44);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    color: #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-top: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 22px;
+    padding: 14px 18px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    overflow: visible;
+    transform-origin: 50% 100%;
+    transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                filter 0.3s ease,
+                max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+                padding 0.3s ease;
+    max-height: 520px;
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1) translateY(0);
+}
+
+/* Droplet Falling Collapse Animation (Liquid Retraction) */
+.webex-helper-toolbar-container.collapsed .webex-helper-panel {
+    opacity: 0;
+    pointer-events: none;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0;
+    border-color: transparent;
+    transform: scale(0.65, 0.15) translateY(28px);
+    filter: blur(12px);
+    overflow: hidden;
+}
+
+.webex-helper-pill,
+.webex-helper-pill-wrapper {
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.25), opacity 0.28s ease;
+    transform-origin: 50% 100%;
+}
+
+.webex-helper-toolbar-container.collapsed .webex-helper-pill-wrapper {
+    display: inline-flex;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+}
+
+.webex-helper-toolbar-container.collapsed .webex-helper-pill {
+    display: flex;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+}
+
+.webex-helper-toolbar-container:not(.collapsed) .webex-helper-pill-wrapper,
+.webex-helper-toolbar-container:not(.collapsed) .webex-helper-pill {
+    display: none !important;
+    opacity: 0 !important;
+    transform: scale(0.6) translateY(14px) !important;
+    pointer-events: none !important;
+}
+
+/* Panel Header */
+.webex-helper-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    padding-bottom: 9px;
+}
+
+.webex-helper-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+}
+
+.webex-helper-close-btn,
+.webex-helper-collapse-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    line-height: 1;
+}
+
+.webex-helper-close-btn:hover,
+.webex-helper-collapse-btn:hover {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.2);
+    border-color: #38bdf8;
+    transform: scale(1.08);
+}
+
+/* Horizontal Rows */
+.webex-helper-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Seeking Controls Capsule */
+.webex-helper-seek-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 3px 5px;
+    flex-shrink: 0;
+}
+
+.webex-helper-seek-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-helper-seek-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.webex-helper-seek-btn:active {
+    transform: scale(0.96);
+}
+
+/* High Priority +-10s Buttons with Prominent Themed Liquid Glass Background */
+.webex-helper-seek-btn.webex-helper-seek-primary {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.28), rgba(14, 165, 233, 0.16));
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #ffffff;
+    font-weight: 700;
+    padding: 5px 10px;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.22);
+}
+
+.webex-helper-seek-btn.webex-helper-seek-primary:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.45), rgba(14, 165, 233, 0.3));
+    border-color: rgba(56, 189, 248, 0.75);
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+    transform: translateY(-1px) scale(1.04);
+}
+
+/* Speed Controls */
+.webex-helper-speed-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 3px 8px;
+    flex-shrink: 0;
+}
+
+.webex-helper-speed-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
+    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-helper-speed-btn:hover {
+    background: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+    transform: scale(1.08);
+}
+
+.webex-helper-speed-val {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+    min-width: 46px;
+    text-align: center;
+}
+
+/* Speed Chips with Liquid Glass Highlights (Always Single Row) */
+.webex-helper-chips,
+.webex-helper-chips-container {
+    display: flex !important;
+    gap: 4px !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+    padding: 6px 4px !important;
+    margin: -6px 0 !important;
+    scrollbar-width: none !important;
+}
+
+.webex-helper-chips::-webkit-scrollbar,
+.webex-helper-chips-container::-webkit-scrollbar {
+    display: none !important;
+}
+
+.webex-helper-chip {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 9999px !important;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    outline: none !important;
+    user-select: none;
+    box-sizing: border-box !important;
+    transform: scale(1) !important;
+}
+
+.webex-helper-chip:hover {
+    background: rgba(56, 189, 248, 0.25) !important;
+    color: #38bdf8 !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.5) !important;
+    transform: scale(1.15) !important;
+    z-index: 10 !important;
+    outline: none !important;
+}
+
+.webex-helper-chip:focus,
+.webex-helper-chip:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+}
+
+.webex-helper-chip:active {
+    background: rgba(56, 189, 248, 0.4) !important;
+    transform: scale(0.96) !important;
+}
+
+.webex-helper-chip.active {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.6), rgba(56, 189, 248, 0.55)) !important;
+    color: #ffffff !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    font-weight: 700;
+}
+
+/* Categorized Study Tools Row */
+.webex-helper-categories-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+.webex-cat-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 6px 8px 7px 8px;
+    min-width: 0;
+    position: relative;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.webex-cat-group.cat-visualizzazione {
+    flex: 0.95 1 auto;
+    background: rgba(56, 189, 248, 0.04);
+    border-color: rgba(56, 189, 248, 0.15);
+}
+
+.webex-cat-group.cat-appunti {
+    flex: 1.02 1 auto;
+}
+
+.webex-cat-group.cat-avanzate {
+    flex: 1.25 1 auto;
+}
+
+.webex-cat-group:hover {
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.webex-cat-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+    padding-left: 2px;
+}
+
+.webex-cat-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.webex-cat-group.cat-avanzate .webex-cat-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+}
+
+.webex-cat-group.cat-avanzate .webex-helper-action-btn {
+    padding: 5px 7px;
+    font-size: 11px;
+    gap: 4px;
+}
+
+/* Action Buttons inside Categories */
+.webex-helper-action-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 5px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap !important;
+    position: relative;
+    user-select: none;
+    flex-shrink: 0 !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
+}
+
+.webex-helper-action-btn span.icon {
+    font-size: 13.5px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.webex-helper-action-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.webex-helper-action-btn:hover span.icon {
+    transform: scale(1.15);
+}
+
+.webex-helper-action-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* Button Hierarchies */
+.webex-btn-hero {
+    padding: 5px 9px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+}
+
+.webex-btn-hero span.icon {
+    font-size: 14.5px !important;
+}
+
+.webex-btn-compact {
+    padding: 5px 6px !important;
+    font-size: 10.5px !important;
+    opacity: 0.9;
+}
+
+.webex-btn-standard {
+    padding: 5px 7px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+/* Subordinate hierarchy (e.g. Loop A-B) */
+.webex-action-btn-subordinate {
+    padding: 5px 6px !important;
+    font-size: 10.5px !important;
+    opacity: 0.85;
+}
+
+.webex-action-btn-subordinate:hover {
+    opacity: 1;
+}
+
+/* VIBRANT ACTIVE STATE (iOS Glowing Pill) */
+.webex-helper-action-btn.active {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.55), rgba(56, 189, 248, 0.45)) !important;
+    border-color: #38bdf8 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.65), inset 0 0 8px rgba(56, 189, 248, 0.3) !important;
+    transform: translateY(-1px);
+    font-weight: 700;
+}
+
+.webex-helper-action-btn.active::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 5px;
+    height: 5px;
+    background: #38bdf8;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #38bdf8;
+    animation: webexPulseDot 1.5s infinite;
+}
+
+@keyframes webexPulseDot {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+/* Tool Flyouts & Popovers (iOS Liquid Glass Inverted Droplet 💧) */
+.webex-tool-with-flyout {
+    position: relative;
+    display: inline-flex;
+}
+
+.webex-action-flyout {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform-origin: 50% 100%;
+    transform: translateX(-50%) translateY(14px) scale(0.85);
+    border-radius: 28px 28px 12px 12px;
+    background: rgba(13, 19, 33, 0.96);
+    backdrop-filter: blur(28px) saturate(220%);
+    -webkit-backdrop-filter: blur(28px) saturate(220%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.42);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    padding: 11px 13px;
+    display: flex !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    filter: blur(10px) !important;
+    pointer-events: none !important;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 2147483647;
+    transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.25),
+                opacity 0.22s ease,
+                filter 0.22s ease,
+                border-radius 0.28s ease,
+                visibility 0.28s ease;
+    min-width: 180px;
+    white-space: nowrap;
+}
+
+/* Invisible bridge covering ONLY the narrow gap above the button itself, not neighbors */
+.webex-action-flyout::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 12px;
+    background: transparent;
+    pointer-events: none;
+}
+
+.webex-tool-with-flyout:hover > .webex-action-flyout,
+.webex-action-flyout.is-open,
+.webex-action-flyout.is-pinned {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateX(-50%) translateY(0) scale(1, 1) !important;
+    filter: blur(0px) !important;
+    border-radius: 16px !important;
+}
+
+.webex-tool-with-flyout:hover > .webex-action-flyout::after,
+.webex-action-flyout.is-open::after,
+.webex-action-flyout.is-pinned::after {
+    pointer-events: auto !important;
+}
+
+.webex-flyout-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.webex-flyout-chips {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.webex-flyout-chip {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #e2e8f0;
+    border-radius: 9999px !important;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    transform: scale(1) !important;
+}
+
+.webex-flyout-chip:hover {
+    background: rgba(56, 189, 248, 0.28) !important;
+    color: #38bdf8 !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.5) !important;
+    transform: scale(1.15) !important;
+    z-index: 10 !important;
+    outline: none !important;
+}
+
+.webex-flyout-chip:focus,
+.webex-flyout-chip:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+}
+
+.webex-flyout-chip.active {
+    background: #38bdf8;
+    color: #0f172a;
+    font-weight: 700;
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.webex-flyout-slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.webex-flyout-slider-lbl {
+    font-size: 10.5px;
+    color: #cbd5e1;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+}
+
+.webex-flyout-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.webex-flyout-add-btn {
+    background: #38bdf8;
+    color: #0f172a;
+    border: none;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.webex-flyout-add-btn:hover {
+    background: #7dd3fc;
+    transform: scale(1.05);
+}
+
+.webex-bm-quick-list {
+    max-height: 160px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 4px;
+}
+
+.webex-bm-quick-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+.webex-bm-quick-time {
+    color: #38bdf8;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.webex-bm-quick-time:hover {
+    text-decoration: underline;
+}
+
+.webex-bm-quick-del {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 2px;
+}
+
+.webex-flyout-step-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.webex-flyout-step-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f1f5f9;
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.webex-flyout-step-btn:hover {
+    background: rgba(56, 189, 248, 0.25);
+    color: #38bdf8;
+    border-color: #38bdf8;
+}
+
+.webex-flyout-step-btn.danger {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.webex-flyout-step-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
+
+/* Volume Booster Row - Stretches to fill empty space on Row 1 */
+.webex-helper-vol-row,
+.webex-helper-vol-boost-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: #94a3b8;
+    flex: 1 1 auto;
+    min-width: 140px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.webex-helper-vol-row:hover,
+.webex-helper-vol-boost-box:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(56, 189, 248, 0.35);
+}
+
+.webex-helper-vol-boost-lbl,
+.webex-helper-vol-row > span:first-child {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.webex-helper-vol-slider {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 60px;
+    accent-color: #38bdf8;
+    cursor: pointer;
+    height: 5px;
+}
+
+.webex-helper-vol-val,
+.webex-helper-vol-boost-val {
+    font-weight: 700;
+    color: #38bdf8;
+    min-width: 38px;
+    text-align: right;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Offline Manager Card (Liquid Glass Box) */
+.webex-helper-buffer-box {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.webex-helper-buffer-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.webex-helper-buffer-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.webex-helper-buffer-select {
+    flex: 1;
+    background: rgba(13, 19, 33, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #f8fafc;
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-size: 11.5px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.webex-helper-buffer-select:focus {
+    border-color: #38bdf8;
+}
+
+.webex-helper-buffer-btn {
+    background: #38bdf8;
+    color: #0f172a;
+    border: none;
+    border-radius: 10px;
+    padding: 7px 16px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.webex-helper-buffer-btn:hover {
+    background: #7dd3fc;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
+}
+
+.webex-helper-buffer-btn:active {
+    transform: translateY(0);
+}
+
+.webex-helper-buffer-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    overflow: hidden;
+    display: none;
+}
+
+.webex-helper-buffer-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #38bdf8, #007aff);
+    transition: width 0.2s ease;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+}
+
+.webex-helper-buffer-status {
+    font-size: 11px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 15px;
+}
+
+.webex-helper-buffer-links {
+    display: flex;
+    gap: 8px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+}
+
+.webex-helper-buffer-link-btn {
+    flex: 1;
+    min-width: 120px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.webex-helper-buffer-link-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(56, 189, 248, 0.25);
+}
+
+.webex-helper-buffer-link-btn.primary-use-buffer {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(56, 189, 248, 0.35));
+    border-color: #10b981;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.webex-helper-buffer-link-btn.primary-use-buffer:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.5), rgba(56, 189, 248, 0.5));
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+}
+
+.webex-helper-buffer-link-btn.active-stop-buffer {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.35), rgba(220, 38, 38, 0.35)) !important;
+    border-color: #ef4444 !important;
+    color: #fca5a5 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3) !important;
+}
+
+.webex-helper-buffer-link-btn.active-stop-buffer:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.55), rgba(220, 38, 38, 0.55)) !important;
+    border-color: #f87171 !important;
+    color: #ffffff !important;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.45) !important;
+}
+
+/* --- Auto-Resume Banner --- */
+.webex-helper-resume-banner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(13, 19, 33, 0.88);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    border-radius: 9999px;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 2147483646;
+    font-size: 13px;
+    font-weight: 600;
+    color: #f8fafc;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-helper-resume-banner.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.webex-helper-resume-btn {
+    background: #38bdf8;
+    color: #0f172a;
+    border: none;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+
+.webex-helper-resume-btn:hover {
+    background: #7dd3fc;
+    transform: scale(1.05);
+}
+
+/* --- ETA Display --- */
+.webex-helper-eta-row {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webex-helper-eta-val {
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+/* Video Zoom & Filters dynamically managed via inline style to prevent style collisions */
+
+/* Zoom cursor */
+video.webex-zoomed {
+    cursor: grab !important;
+}
+
+video.webex-zoomed:active {
+    cursor: grabbing !important;
+}
+
+/* --- Notes Modal (Zero Blur on Blackboard, Draggable) --- */
+.webex-helper-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    z-index: 2147483647;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    animation: webexHelperFadeIn 0.2s ease;
+}
+
+@keyframes webexHelperFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.webex-helper-modal {
+    pointer-events: auto;
+    background: rgba(13, 19, 33, 0.95);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 18px;
+    width: 90%;
+    max-width: 450px;
+    max-height: 80vh;
+    overflow-y: auto;
+    color: #f8fafc;
+    padding: 20px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+    user-select: none;
+}
+
+.webex-helper-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    cursor: move;
+    user-select: none;
+}
+
+.webex-helper-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.webex-helper-note-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    color: #ffffff;
+    padding: 12px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 90px;
+    margin-bottom: 14px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.webex-helper-note-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+}
+
+.webex-helper-note-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.webex-helper-bm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.webex-helper-bm-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 8px 12px;
+}
+
+.webex-helper-bm-time {
+    color: #38bdf8;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.webex-helper-bm-del {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.webex-helper-shortcut-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+.webex-helper-shortcut-table td {
+    padding: 7px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.webex-helper-shortcut-table kbd {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #38bdf8;
+}
+
+/* ==========================================================================
+   PiP & VIDEO HOVER FIX: Clean Edge Vignette, 100% Center Transparency
+   ========================================================================== */
+.video-js.vjs-has-started:hover .vjs-text-track-display {
+    background: transparent !important;
+}
+
+.webex-pip-active video,
+.video-js:hover video {
+    opacity: 1 !important;
+}
+
+.video-js.vjs-has-started .vjs-control-bar {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 100%) !important;
+}
+
+/* Suppress Video.js error modals permanently so they NEVER block clicks or controls */
+.vjs-error-display,
+.vjs-modal-dialog,
+.webex-suppress-error {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Ensure Video.js control bar and progress bar remain fully interactive during local playback */
+.video-js.vjs-error .vjs-control-bar,
+.video-js .vjs-progress-control,
+.video-js .vjs-progress-holder,
+.video-js .vjs-play-progress,
+.video-js .vjs-slider {
+    display: flex !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    cursor: pointer !important;
+}
+
+/* Timeline Diamond Markers (Segnalibri su Barra di Riproduzione) */
+.webex-timeline-markers-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.webex-timeline-marker {
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    background: #38bdf8;
+    border: 1.5px solid #ffffff;
+    transform: translate(-50%, -50%) rotate(45deg);
+    border-radius: 2px;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+    transition: transform 0.15s ease, background 0.15s ease;
+    z-index: 12;
+}
+
+.webex-timeline-marker:hover {
+    transform: translate(-50%, -50%) rotate(45deg) scale(1.4);
+    background: #00f0ff;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 1);
+}
+
+/* Silence Acceleration Indicator Badge (Top-Right of Player) */
+.webex-silence-indicator {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid #38bdf8;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.5), inset 0 0 10px rgba(56, 189, 248, 0.25);
+    border-radius: 9999px;
+    padding: 6px 14px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 2147483645;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: webexSilenceGlow 1.5s infinite alternate;
+}
+
+.webex-silence-indicator.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+@keyframes webexSilenceGlow {
+    from { box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); }
+    to { box-shadow: 0 0 24px rgba(56, 189, 248, 0.8); }
+}
+
+/* Camera Shutter Flash Animation (Slide Capture) */
+.webex-shutter-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.88);
+    pointer-events: none;
+    z-index: 2147483640;
+    animation: webexShutterFlashAnim 0.35s ease-out forwards;
+}
+
+@keyframes webexShutterFlashAnim {
+    0% { opacity: 0.88; }
+    100% { opacity: 0; }
+}
+
+/* Smooth Video Zoom (Spring Physics) */
+video.webex-zoomed,
+#offline-video {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transform-origin: center center !important;
+}
+
+.webex-zoom-dragging,
+.webex-zoom-dragging video,
+#offline-video.dragging {
+    transition: none !important;
+}
+
+/* In-Page File Explorer Modal (Liquid Glass) */
+.webex-explorer-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(4, 7, 15, 0.78);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483647;
+    padding: 20px;
+    animation: webexExplFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes webexExplFadeIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.webex-explorer-modal {
+    background: rgba(13, 19, 33, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-top: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 20px;
+    width: 860px;
+    max-width: 95vw;
+    height: 580px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.webex-explorer-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.webex-explorer-title-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.webex-explorer-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.webex-explorer-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.webex-explorer-sidebar {
+    width: 220px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 14, 24, 0.6);
+    display: flex;
+    flex-direction: column;
+}
+
+.webex-explorer-sidebar-header {
+    padding: 12px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.webex-explorer-folder-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.webex-explorer-folder-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.webex-explorer-folder-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.webex-explorer-folder-item.active {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    font-weight: 700;
+}
+
+.webex-explorer-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.webex-explorer-toolbar {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.webex-explorer-sort-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #f1f5f9;
+    font-size: 11.5px;
+    border-radius: 8px;
+    padding: 5px 8px;
+    outline: none;
+    cursor: pointer;
+}
+
+.webex-explorer-file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.webex-explorer-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.webex-explorer-card:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+}
+
+.webex-explorer-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.webex-explorer-card-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #f8fafc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.webex-explorer-card-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.webex-explorer-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Liquid Glass Folder Pill Button */
+.webex-folder-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 20px;
+    padding: 4px 10px;
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.webex-folder-pill-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #e0f2fe;
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
+}
+
+.webex-folder-pill-btn:active {
+    transform: scale(0.97);
+}
+
+.webex-folder-pill-btn .pill-chevron {
+    font-size: 9px;
+    opacity: 0.75;
+    transition: transform 0.2s ease;
+}
+
+.webex-folder-pill-btn.is-active .pill-chevron {
+    transform: rotate(180deg);
+}
+
+/* Liquid Glass Floating Dropdown */
+.webex-folder-liquid-dropdown {
+    position: fixed;
+    z-index: 2147483647;
+    min-width: 200px;
+    max-width: 280px;
+    background: rgba(13, 19, 33, 0.94);
+    backdrop-filter: blur(32px) saturate(220%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    animation: liquidDropdownEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: top center;
+}
+
+@keyframes liquidDropdownEnter {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(-6px);
+        filter: blur(6px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0);
+    }
+}
+
+.webex-dropdown-header {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px 4px;
+}
+
+.webex-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.webex-dropdown-item:hover {
+    background: rgba(56, 189, 248, 0.18);
+    color: #ffffff;
+    transform: translateX(2px);
+}
+
+.webex-dropdown-item:active {
+    transform: scale(0.98);
+}
+
+.webex-dropdown-item.is-selected {
+    background: rgba(56, 189, 248, 0.14);
+    color: #38bdf8;
+    font-weight: 700;
+}
+
+.webex-dropdown-item .check {
+    color: #38bdf8;
+    font-weight: 800;
+    font-size: 12px;
+}
+
+.webex-dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 2px;
+}
+
+.webex-dropdown-item.create-new {
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+.webex-dropdown-item.create-new:hover {
+    background: rgba(56, 189, 248, 0.25);
+    color: #ffffff;
+}
+
+/* In-Page Buffer Mode: Ensure video is on top and Webex error/poster masks are suppressed */
+body.webex-buffer-mode video.vjs-tech,
+body.webex-buffer-mode .video-js video {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 5 !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+body.webex-buffer-mode .vjs-poster,
+body.webex-buffer-mode [class*="poster"],
+body.webex-buffer-mode .vjs-loading-spinner,
+body.webex-buffer-mode .vjs-error-display,
+body.webex-buffer-mode .vjs-modal-dialog,
+body.webex-buffer-mode .el-loading-mask,
+body.webex-buffer-mode .loading-mask,
+body.webex-buffer-mode [class*="loading-spinner"],
+body.webex-buffer-mode [class*="network-error"],
+body.webex-buffer-mode [class*="offline-mask"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================================================
+   Liquid Glass Topbar Lecture Selector (Offline Player)
+   ========================================================================== */
+.webex-top-lecture-wrapper {
+    position: relative;
+    max-width: 440px;
+    width: 100%;
+}
+
+.webex-top-lecture-pill {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px) saturate(190%);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-top: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+}
+
+.webex-top-lecture-pill:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: #38bdf8;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.webex-top-lecture-pill.is-active {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: #38bdf8;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.pill-title-text {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #f1f5f9;
+}
+
+.pill-count-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.pill-chevron-icon {
+    font-size: 11px;
+    color: #94a3b8;
+    transition: transform 0.22s ease;
+}
+
+.webex-top-lecture-pill.is-active .pill-chevron-icon {
+    transform: rotate(180deg);
+    color: #38bdf8;
+}
+
+.webex-top-lecture-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    min-width: 380px;
+    max-width: 520px;
+    background: rgba(13, 19, 33, 0.96);
+    backdrop-filter: blur(32px) saturate(220%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 2147483647;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.96);
+    pointer-events: none;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-top-lecture-dropdown.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.top-lecture-search-row input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9px;
+    padding: 7px 11px;
+    font-size: 12px;
+    color: #f1f5f9;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.top-lecture-search-row input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.top-lecture-list {
+    max-height: 340px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: 2px;
+}
+
+.top-lecture-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    text-align: left;
+}
+
+.top-lecture-item:hover {
+    background: rgba(56, 189, 248, 0.14);
+    border-color: rgba(56, 189, 248, 0.3);
+    transform: translateX(2px);
+}
+
+.top-lecture-item.is-current {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: #38bdf8;
+}
+
+.top-lecture-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+}
+
+.top-lecture-item-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #f8fafc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.top-lecture-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    color: #94a3b8;
+}
+
+.top-lecture-folder-badge {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 10px;
+}
+
+/* Hierarchical Subfolder Tree in Explorer Sidebar */
+.webex-explorer-folder-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    user-select: none;
+    position: relative;
+}
+
+.webex-explorer-folder-item.subfolder {
+    border-left: 2px solid rgba(56, 189, 248, 0.3);
+    border-radius: 4px 8px 8px 4px;
+}
+
+.webex-explorer-folder-item .folder-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.webex-explorer-folder-item:hover .folder-actions {
+    opacity: 1;
+}
+
+.add-subfolder-btn, .del-folder-btn {
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+
+.add-subfolder-btn {
+    color: #38bdf8;
+}
+
+.add-subfolder-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    transform: scale(1.15);
+}
+
+.del-folder-btn {
+    color: #ef4444;
+}
+
+.del-folder-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.15);
+}
+
+/* Mirror Status Badge (Top Bar & Modal) */
+.pc-mirror-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pc-mirror-status-badge.active-mirror {
+    background: rgba(16, 185, 129, 0.16);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+
+.pc-mirror-status-badge.active-mirror:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.3);
+}
+
+.pc-mirror-status-badge.needs-permission {
+    background: rgba(245, 158, 11, 0.16);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+}
+
+/* ==========================================================================
+   In-Page Buffer Dedicated Liquid Glass Player & Timeline Scrubber
+   ========================================================================== */
+#webex-inpage-buffer-player {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: #000000 !important;
+    z-index: 2147483600 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+#webex-inpage-buffer-video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    display: block !important;
+    background: #000000 !important;
+    cursor: pointer !important;
+}
+
+.webex-inpage-controls-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(7, 10, 18, 0.96) 0%, rgba(13, 19, 33, 0.85) 60%, transparent 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    padding: 16px 20px 14px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 20;
+    opacity: 1;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto;
+}
+
+.webex-inpage-controls-bar.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+}
+
+.webex-inpage-timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.webex-inpage-time {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #cbd5e1;
+    font-variant-numeric: tabular-nums;
+    min-width: 48px;
+    text-align: center;
+}
+
+.webex-inpage-timeline-track {
+    flex: 1;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+    transition: height 0.15s ease;
+}
+
+.webex-inpage-timeline-track:hover {
+    height: 10px;
+}
+
+.webex-inpage-timeline-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #38bdf8, #60a5fa);
+    border-radius: 4px;
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.webex-inpage-timeline-handle {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 15px;
+    height: 15px;
+    background: #ffffff;
+    border: 2px solid #38bdf8;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    pointer-events: none;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+    transition: transform 0.15s ease;
+}
+
+.webex-inpage-timeline-track:hover .webex-inpage-timeline-handle,
+.webex-inpage-timeline-track.is-scrubbing .webex-inpage-timeline-handle {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.webex-inpage-timeline-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    transform: translateX(-50%);
+    background: rgba(13, 19, 33, 0.94);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.webex-inpage-buttons-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.inpage-btn-group-left, .inpage-btn-group-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inpage-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.inpage-btn:hover {
+    background: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+    transform: translateY(-1px);
+}
+
+.inpage-btn.inpage-btn-primary {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.32), rgba(14, 165, 233, 0.2)) !important;
+    border-color: rgba(56, 189, 248, 0.55) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25) !important;
+}
+
+.inpage-btn.inpage-btn-primary:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.5), rgba(14, 165, 233, 0.35)) !important;
+    border-color: rgba(56, 189, 248, 0.85) !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
+    transform: translateY(-1px) scale(1.04) !important;
+}
+
+.inpage-volume-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.inpage-vol-slider {
+    width: 65px;
+    accent-color: #38bdf8;
+    cursor: pointer;
+}
+
+.inpage-speed-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+    padding: 3px 9px;
+    border-radius: 9999px !important;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.inpage-speed-badge:hover {
+    background: rgba(56, 189, 248, 0.3) !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+    transform: scale(1.15) !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+}
+
+.inpage-revert-btn {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.35), rgba(220, 38, 38, 0.35));
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+
+.inpage-revert-btn:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Custom Liquid Glass Selectors for Buffer Section
+   ========================================================================== */
+.webex-buffer-glass-select-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 140px;
+}
+
+.webex-buffer-glass-pill {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px) saturate(190%);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    color: #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 10px;
+    padding: 7px 11px;
+    font-size: 11.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.webex-buffer-glass-pill:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: #38bdf8;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+    transform: translateY(-1px);
+}
+
+.webex-buffer-glass-pill.is-active {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: #38bdf8;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
+}
+
+.webex-buffer-glass-pill .chevron {
+    font-size: 10px;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+}
+
+.webex-buffer-glass-pill.is-active .chevron {
+    transform: rotate(180deg);
+    color: #38bdf8;
+}
+
+.webex-buffer-glass-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    width: 100%;
+    min-width: 200px;
+    max-height: 240px;
+    overflow-y: auto;
+    background: rgba(13, 19, 33, 0.97);
+    backdrop-filter: blur(32px) saturate(220%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 2147483647;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px) scale(0.96);
+    pointer-events: none;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+.webex-buffer-glass-menu.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.webex-buffer-glass-menu::-webkit-scrollbar {
+    width: 5px;
+}
+
+.webex-buffer-glass-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+}
+
+.webex-buffer-glass-item {
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.webex-buffer-glass-item:hover {
+    background: rgba(56, 189, 248, 0.18);
+    color: #ffffff;
+    transform: translateX(2px);
+}
+
+.webex-buffer-glass-item.is-selected {
+    background: rgba(56, 189, 248, 0.14);
+    color: #38bdf8;
+    font-weight: 700;
+}
+
+.webex-buffer-glass-item.create-new {
+    color: #38bdf8;
+    font-weight: 600;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 3px;
+    padding-top: 8px;
+}
+
+/* ==========================================================================
+   Spotify-Style Interactive Subtitles & Live Lyrics Transcript
+   ========================================================================== */
+.webex-subtitles-modal {
+    position: fixed;
+    top: 60px;
+    left: 24px;
+    width: 380px;
+    min-width: 250px;
+    height: 520px;
+    min-height: 250px;
+    background: rgba(13, 19, 33, 0.70);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 24px;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 30px rgba(56, 189, 248, 0.25), inset 0 1px 1px rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    z-index: 2147483647 !important;
+    overflow: auto;
+    resize: both;
+    min-width: 300px;
+    min-height: 400px;
+    animation: webexSubtitlesSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes webexSubtitlesSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.webex-subtitles-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: grab;
+    user-select: none;
+}
+
+.webex-subtitles-header:active {
+    cursor: grabbing;
+}
+
+.webex-subtitles-title-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.webex-subtitles-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.2px;
+}
+
+.webex-subtitles-status-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    font-weight: 600;
+}
+
+.webex-subtitles-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webex-subtitles-action-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #cbd5e1;
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.webex-subtitles-action-btn:hover {
+    background: rgba(56, 189, 248, 0.22);
+    color: #ffffff;
+    border-color: rgba(56, 189, 248, 0.45);
+}
+
+.webex-subtitles-action-btn.active {
+    background: rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    border-color: #38bdf8;
+}
+
+/* Pill Bar Container with Circular Subtitles Actions */
+.webex-helper-pill-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+
+.webex-pill-quick-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webex-pill-circle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #e2e8f0;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    flex-shrink: 0;
+    line-height: 1;
+    padding: 0;
+}
+
+.webex-pill-circle-btn:hover {
+    background: rgba(56, 189, 248, 0.28);
+    border-color: #38bdf8;
+    color: #ffffff;
+    transform: scale(1.1);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+}
+
+.webex-pill-circle-btn:active {
+    transform: scale(0.92);
+}
+
+.webex-pill-circle-btn.active {
+    background: rgba(56, 189, 248, 0.35);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.webex-subtitles-close-btn {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.18s ease;
+}
+
+.webex-subtitles-close-btn:hover {
+    background: rgba(239, 68, 68, 0.35);
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+.webex-subtitles-footer {
+    padding: 8px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.webex-subtitles-footer-info {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.webex-subtitles-footer-close-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+}
+
+.webex-subtitles-footer-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.webex-subtitles-search-box {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.webex-subtitles-search-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #f1f5f9;
+    outline: none;
+    transition: all 0.18s ease;
+}
+
+.webex-subtitles-search-input:focus {
+    border-color: #38bdf8;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.webex-subtitles-toolbar {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.22);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.webex-subtitles-toolbar .danger-btn:hover {
+    background: rgba(239, 68, 68, 0.3) !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+.webex-subtitles-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.webex-subtitles-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.webex-subtitles-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 4px;
+}
+
+/* Spotify Lyrics Cue Styling */
+.webex-transcript-cue {
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 14.5px;
+    line-height: 1.55;
+    font-weight: 500;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: text;
+}
+
+.webex-transcript-cue:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.85);
+    transform: translateX(3px);
+}
+
+.webex-transcript-cue .cue-time {
+    display: none !important;
+}
+
+.webex-transcript-cue .cue-text {
+    flex: 1;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+/* Individual Interactive Word in Spotify Lyrics */
+.spotify-word {
+    display: inline-block;
+    padding: 1px 3px;
+    margin: 0 1px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    user-select: text;
+    /* Default is unread/gray */
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.webex-transcript-cue.cue-past .spotify-word {
+    color: #f1f5f9;
+    opacity: 0.95;
+}
+
+.webex-transcript-cue.cue-future .spotify-word {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.spotify-word:hover {
+    background: rgba(56, 189, 248, 0.35) !important;
+    color: #38bdf8 !important;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.85);
+    transform: translateY(-2px) scale(1.08);
+    z-index: 10;
+}
+
+.spotify-word.is-past {
+    color: #f1f5f9;
+    opacity: 0.95;
+}
+
+.spotify-word.is-speaking {
+    color: #38bdf8 !important;
+    opacity: 1;
+    display: inline-block;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    transform: scale(1.03);
+}
+
+.spotify-word.is-future {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+/* Spotify Active Sung/Spoken Sentence: Glows Bright White & Cyan */
+.webex-transcript-cue.is-active {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-left: 2px solid #38bdf8 !important;
+}
+
+.webex-transcript-cue.is-active .cue-time {
+    background: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+    font-weight: 800;
+}
+
+.webex-subtitles-empty {
+    padding: 30px 16px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.webex-subtitles-empty b {
+    color: #f1f5f9;
+}
+
+/* On-Video Subtitle Closed-Caption Glass Overlay */
+.webex-video-cc-overlay {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 15, 29, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 8px 22px;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    max-width: 82%;
+    z-index: 99999;
+    pointer-events: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.webex-video-cc-overlay.is-hidden {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   Liquid Glass VisionOS Notes & Comments Panel
+   ========================================================================== */
+.webex-notes-glass-modal {
+    position: fixed;
+    top: 60px;
+    right: 28px;
+    width: 440px;
+    max-width: 92vw;
+    height: 580px;
+    max-height: 84vh;
+    background: rgba(10, 16, 30, 0.84);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-top: 1px solid rgba(255, 255, 255, 0.36);
+    border-radius: 22px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    display: flex;
+    flex-direction: column;
+    z-index: 100000;
+    overflow: hidden;
+    animation: webexNotesSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+    color: #f1f5f9;
+    box-sizing: border-box;
+}
+
+@keyframes webexNotesSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.96);
+        filter: blur(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.webex-notes-glass-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.02);
+    cursor: grab;
+    user-select: none;
+}
+
+.webex-notes-glass-header:active {
+    cursor: grabbing;
+}
+
+.webex-notes-title-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.webex-notes-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.2px;
+}
+
+.webex-notes-badge {
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(56, 189, 248, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+.webex-notes-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-notes-close-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+    transform: rotate(90deg) scale(1.08);
+}
+
+.webex-notes-quick-add {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.webex-notes-quick-add textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: #f8fafc;
+    font-size: 12.5px;
+    font-family: inherit;
+    resize: none;
+    height: 52px;
+    outline: none;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.webex-notes-quick-add textarea:focus {
+    border-color: #38bdf8;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+}
+
+.webex-notes-quick-add-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.webex-notes-curtime-pill {
+    font-size: 11px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.webex-notes-add-btn {
+    background: linear-gradient(135deg, #0284c7, #38bdf8);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 6px 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webex-notes-add-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.5);
+    filter: brightness(1.08);
+}
+
+.webex-notes-add-btn:active {
+    transform: scale(0.96);
+}
+
+.webex-notes-search-box {
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.webex-notes-search-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #f1f5f9;
+    font-size: 12px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.webex-notes-search-input:focus {
+    border-color: #38bdf8;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.webex-notes-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scroll-behavior: smooth;
+}
+
+.webex-notes-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.webex-notes-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.webex-notes-card-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+}
+
+.webex-notes-card-item:hover {
+    background: rgba(56, 189, 248, 0.08);
+    border-color: rgba(56, 189, 248, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.webex-notes-card-item:active {
+    transform: scale(0.985);
+}
+
+.webex-notes-card-item.just-jumped {
+    animation: webexCardJumpPulse 0.6s ease;
+}
+
+@keyframes webexCardJumpPulse {
+    0% { border-color: #38bdf8; box-shadow: 0 0 16px rgba(56, 189, 248, 0.6); }
+    100% { border-color: rgba(255, 255, 255, 0.08); box-shadow: none; }
+}
+
+.webex-notes-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.webex-notes-card-date {
+    font-size: 10.5px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.webex-notes-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webex-notes-card-del-btn {
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.webex-notes-card-del-btn:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.15);
+}
+
+.webex-notes-card-text {
+    font-size: 13px;
+    color: #f1f5f9;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.webex-notes-empty {
+    padding: 36px 16px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12.5px;
+    line-height: 1.6;
+}
+
+.webex-notes-empty-icon {
+    font-size: 34px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.3));
+}
+
+.webex-notes-footer {
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.webex-notes-footer-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webex-notes-footer-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.webex-notes-footer-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+
+
+
+
+
+/* Hide native webex buttons per request */
+.vjs-control-bar .vjs-button:not(.vjs-play-control),
+.vjs-control-bar .vjs-volume-panel,
+.vjs-control-bar .vjs-time-control.vjs-duration,
+.vjs-control-bar .vjs-time-divider {
+    display: none !important;
+}
+
+
+/* --- New Quick Actions Bar --- */
+.webex-quick-actions-bar {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    max-width: calc(100vw - 32px) !important;
+    position: fixed !important;
+    bottom: 58px !important;
+    left: 16px !important;
+    pointer-events: auto !important;
+    z-index: 2147483647 !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+}
+
+.webex-quick-actions-bar.is-visible {
+    display: flex;
+}
+
+.webex-floating-box {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    padding: 8px 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s, border-color 0.2s, background 0.2s;
+    user-select: none;
+}
+.webex-floating-box:hover {
+    transform: translateY(-3px) scale(1.05);
+    background: rgba(30, 41, 59, 0.75);
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.webex-qa-speed-group {
+    padding: 4px;
+    gap: 6px;
+}
+.webex-qa-speed-group button {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.webex-qa-speed-group button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+.webex-qa-speed-group span {
+    min-width: 44px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.webex-qa-icon-btn {
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+}
+.webex-qa-icon-btn.active {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+
+/* Hide Quick Actions Bar when Big Toolbar is expanded/opened */
+body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-bar,
+#webex-helper-toolbar-container:not(.collapsed) ~ #webex-quick-actions-bar,
+.webex-helper-toolbar-container:not(.collapsed) .webex-quick-actions-bar {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+
+/* Responsive Single-Row Layout for Master Toolbar */
+.webex-helper-toolbar-container {
+    max-width: calc(100vw - 20px) !important;
+}
+
+.webex-helper-panel {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.webex-helper-categories-row {
+    display: flex !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+}
+
+.webex-cat-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    padding: 6px 8px 7px 8px !important;
+    min-width: 0 !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+}
+
+.webex-cat-group.cat-visualizzazione {
+    flex: 0.95 1 auto !important;
+    background: rgba(56, 189, 248, 0.04) !important;
+    border-color: rgba(56, 189, 248, 0.15) !important;
+}
+
+.webex-cat-group.cat-appunti {
+    flex: 1.02 1 auto !important;
+}
+
+.webex-cat-group.cat-avanzate {
+    flex: 1.25 1 auto !important;
+}
+
+.webex-cat-tools {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+}
+
+.webex-cat-group.cat-avanzate .webex-cat-tools {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+}
+
+.webex-cat-group.cat-avanzate .webex-helper-action-btn {
+    padding: 5px 7px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+}
+
+/* Fluid Responsive Scaling for narrower windows */
+@media (max-width: 860px) {
+    .webex-helper-toolbar-container {
+        width: calc(100vw - 16px) !important;
+    }
+    .webex-helper-panel {
+        padding: 10px 12px !important;
+    }
+    .webex-helper-categories-row {
+        gap: 4px !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+    }
+    .webex-helper-categories-row::-webkit-scrollbar {
+        display: none !important;
+    }
+    .webex-cat-group {
+        padding: 5px 6px 6px 6px !important;
+    }
+    .webex-cat-tools {
+        gap: 3px !important;
+    }
+    .webex-helper-action-btn {
+        padding: 4px 6px !important;
+        font-size: 10.5px !important;
+        gap: 3px !important;
+        height: 26px !important;
+    }
+    .webex-btn-hero {
+        padding: 4px 7px !important;
+        font-size: 11px !important;
+    }
+    .webex-btn-compact {
+        padding: 4px 5px !important;
+        font-size: 10px !important;
+    }
+    .webex-btn-standard {
+        padding: 4px 6px !important;
+        font-size: 10.5px !important;
+    }
+}
+
+/* Subtitles Search Input 100% Width */
+.webex-subtitles-search-box {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.webex-subtitles-search-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+    box-sizing: border-box !important;
+}
+
+/* Quick Actions Bar Flyouts */
+.webex-qa-tool-wrapper {
+    position: relative !important;
+    display: inline-flex !important;
+}
+
+.webex-qa-tool-wrapper:hover > .webex-action-flyout,
+.webex-qa-tool-wrapper:focus-within > .webex-action-flyout,
+.webex-qa-tool-wrapper.is-open > .webex-action-flyout {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    filter: blur(0px) !important;
+    transform: translateX(-50%) translateY(0) scale(1) !important;
+}
+
+.webex-quick-actions-bar .webex-action-flyout {
+    bottom: calc(100% + 6px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(6px) scale(0.96) !important;
+    border-radius: 16px !important;
+    z-index: 2147483647 !important;
+    min-width: 190px !important;
+}
+
+.webex-quick-actions-bar .webex-action-flyout::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: -25px !important;
+    right: -25px !important;
+    width: auto !important;
+    height: 25px !important;
+    background: transparent !important;
+    pointer-events: auto !important;
+}
+
+.webex-qa-boost-flyout {
+    min-width: 210px !important;
+}
+
+/* Quick Actions Bar - Zero Clipping, Overflow Visible so Flyouts & Glow Effects Pop Up Cleanly */
+.webex-quick-actions-bar {
+    max-width: calc(100vw - 24px) !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+}
+
+.webex-quick-actions-bar .webex-floating-box {
+    flex-shrink: 0 !important;
+}
+
+.webex-qa-tool-wrapper {
+    position: relative !important;
+    display: inline-flex !important;
+    overflow: visible !important;
+}
+
+/* Silence Flyout Box & Explainer Card */
+.webex-silence-flyout-box {
+    width: 290px !important;
+    max-width: min(320px, calc(100vw - 32px)) !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+    max-height: min(520px, calc(100vh - 90px)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
+}
+
+.webex-silence-flyout-box::-webkit-scrollbar {
+    width: 5px;
+}
+
+.webex-silence-flyout-box::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.4);
+    border-radius: 4px;
+}
+
+.webex-silence-flyout-box .webex-flyout-slider-row {
+    white-space: normal !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+
+.webex-silence-info-card {
+    background: rgba(15, 23, 42, 0.96) !important;
+    border: 1px solid rgba(56, 189, 248, 0.35) !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    margin: 8px 0 10px 0 !important;
+    font-size: 11.5px !important;
+    line-height: 1.5 !important;
+    color: #e2e8f0 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    animation: fadeInSlideDown 0.2s ease forwards !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 220px !important;
+    overflow-y: auto !important;
+}
+
+.webex-silence-info-toggle-btn {
+    transition: all 0.15s ease;
+}
+
+.webex-silence-info-toggle-btn:hover {
+    transform: scale(1.15);
+    background: rgba(56, 189, 248, 0.3) !important;
+    border-color: #38bdf8 !important;
+}

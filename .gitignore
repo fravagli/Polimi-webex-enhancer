@@ -1,0 +1,31 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node / dependencies
+node_modules/
+package-lock.json
+
+# Scratch & Logs
+scratch/
+*.log
+*.tmp
+
+# Media & local audio/video files (avoid committing user test recordings)
+*.mp4
+*.wav
+*.mp3
+*.m4a
+*.vtt
+*.srt
+
+# Secrets & environment
+.env
+.env.*

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoliMi Webex Enhancer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 350px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #090d16;
+            color: #f1f5f9;
+            padding: 16px;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* Glass Container Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 0.3px;
+        }
+
+        .header-logo {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+        }
+
+        .badge-version {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        /* Status Box */
+        .status-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px;
+            padding: 9px 12px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 11.5px;
+            color: #cbd5e1;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+        }
+
+        .status-dot.active {
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            margin-bottom: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Liquid Glass Controls Grid */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .btn-ctrl {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 8px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .btn-ctrl span.icon {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .btn-ctrl:hover {
+            background: rgba(56, 189, 248, 0.18);
+            border-color: #38bdf8;
+            color: #38bdf8;
+            transform: translateY(-1px);
+        }
+
+        /* Glowing Active State */
+        .btn-ctrl.active {
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.45), rgba(56, 189, 248, 0.4)) !important;
+            border-color: #38bdf8 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.65), inset 0 0 6px rgba(56, 189, 248, 0.3) !important;
+            font-weight: 700;
+        }
+
+        .btn-ctrl.active::after {
+            content: "";
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 5px;
+            height: 5px;
+            background: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 0 4px #38bdf8;
+        }
+
+        /* Liquid Glass Box */
+        .glass-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        /* Speed Section */
+        .speed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .speed-current {
+            font-size: 14px;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .chips-row {
+            display: flex;
+            gap: 4px;
+            justify-content: space-between;
+        }
+
+        .chip-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            font-size: 10.5px;
+            font-weight: 600;
+            padding: 5px 2px;
+            border-radius: 7px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+
+        .chip-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-color: #38bdf8;
+        }
+
+        .chip-btn.active {
+            background: rgba(56, 189, 248, 0.35);
+            color: #38bdf8;
+            border-color: #38bdf8;
+            font-weight: 700;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+        }
+
+        /* Progress Bar */
+        .buffer-progress-bar {
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .buffer-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8, #007aff);
+            transition: width 0.2s ease;
+        }
+
+        /* Collapsible Shortcuts */
+        details {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 11.5px;
+            color: #94a3b8;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #cbd5e1;
+            outline: none;
+        }
+
+        summary:hover {
+            color: #38bdf8;
+        }
+
+        .shortcut-table {
+            width: 100%;
+            margin-top: 8px;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .shortcut-table td {
+            padding: 4px 2px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #e2e8f0;
+        }
+
+        .shortcut-table kbd {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: monospace;
+            color: #38bdf8;
+            font-size: 10px;
+        }
+
+        /* Offline Hero Card */
+        .offline-hero-card {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(0, 122, 255, 0.08));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            border-top: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .offline-hero-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .offline-hero-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .badge-offline {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            font-size: 9.5px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 999px;
+        }
+
+        .btn-open-offline-hero {
+            background: #38bdf8;
+            color: #090d16;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-open-offline-hero:hover {
+            background: #7dd3fc;
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-open-offline-hero:active {
+            transform: translateY(0) scale(0.97);
+        }
+
+        .offline-hero-tip {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 6px;
+            line-height: 1.35;
+        }
+
+        .offline-hero-tip b {
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <img src="images/logo32.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            <span>PoliMi Webex Enhancer</span>
+        </div>
+        <span class="badge-version">v2.0</span>
+    </div>
+
+    <!-- Offline Hero Banner (Zero-Internet Access) -->
+    <div class="offline-hero-card">
+        <div class="offline-hero-header">
+            <div class="offline-hero-title">
+                <span>📚 Libreria Offline</span>
+                <span class="badge-offline">Zero Internet</span>
+            </div>
+            <button class="btn-open-offline-hero" id="popup-btn-hero-player" title="Apri Player Offline">
+                <span>Apri Player ↗</span>
+            </button>
+        </div>
+        <div class="offline-hero-tip">
+            💡 Premi <b>Ctrl+D</b> nel player per salvarlo nei Preferiti e aprirlo con 1 click senza connessione!
+        </div>
+    </div>
+
+    <!-- Active Status -->
+    <div class="status-box">
+        <div class="status-dot" id="status-dot"></div>
+        <div id="status-text" style="line-height: 1.3;">Rilevamento video in corso...</div>
+    </div>
+
+    <!-- Quick Player Controls -->
+    <div class="section-title">Controlli Rapidi</div>
+    <div class="controls-grid">
+        <button class="btn-ctrl" id="btn-seek-back" title="Indietro 10s">
+            <span class="icon">⏪</span>
+            <span>−10s</span>
+        </button>
+        <button class="btn-ctrl" id="btn-play-pause" title="Play / Pausa">
+            <span class="icon">⏯</span>
+            <span>Play/Pausa</span>
+        </button>
+        <button class="btn-ctrl" id="btn-seek-fwd" title="Avanti 10s">
+            <span class="icon">⏩</span>
+            <span>+10s</span>
+        </button>
+        <button class="btn-ctrl" id="btn-screenshot" title="Copia slide negli appunti">
+            <span class="icon">📸</span>
+            <span>Slide</span>
+        </button>
+        <button class="btn-ctrl" id="btn-pip" title="Picture in Picture">
+            <span class="icon">🪟</span>
+            <span>PiP</span>
+        </button>
+        <button class="btn-ctrl" id="btn-bookmark" title="Aggiungi Segnalibro">
+            <span class="icon">📌</span>
+            <span>Segnalibro</span>
+        </button>
+    </div>
+
+    <!-- Advanced Study Tools -->
+    <div class="section-title">Strumenti Studio Avanzati</div>
+    <div class="controls-grid">
+        <button class="btn-ctrl" id="btn-zoom" title="Zoom e trascina formule con il mouse">
+            <span class="icon">🔍</span>
+            <span id="label-zoom">Zoom</span>
+        </button>
+        <button class="btn-ctrl" id="btn-contrast" title="Filtro ad alto contrasto per lavagne">
+            <span class="icon">🎨</span>
+            <span id="label-contrast">Filtro</span>
+        </button>
+        <button class="btn-ctrl" id="btn-dark" title="Inverti sfondo per slide bianche">
+            <span class="icon">🌙</span>
+            <span id="label-dark">Dark Mode</span>
+        </button>
+        <button class="btn-ctrl" id="btn-silence" title="Accelera al 3x durante i silenzi">
+            <span class="icon">🤫</span>
+            <span id="label-silence">Silenzi</span>
+        </button>
+        <button class="btn-ctrl" id="btn-loop-ab" title="Ripeti passaggio difficile tra A e B">
+            <span class="icon">🔁</span>
+            <span id="label-loop">Loop A-B</span>
+        </button>
+        <button class="btn-ctrl" id="btn-notes" title="Prendi note con export Notion">
+            <span class="icon">📝</span>
+            <span>Note</span>
+        </button>
+    </div>
+
+    <!-- Speed Presets -->
+    <div class="glass-box">
+        <div class="speed-header">
+            <span class="section-title" style="margin-bottom:0">Velocità di Riproduzione</span>
+            <span class="speed-current" id="speed-label">1.0x</span>
+        </div>
+        <div class="chips-row">
+            <div class="chip-btn" data-speed="0.9">0.90x</div>
+            <div class="chip-btn" data-speed="1.0">1.0x</div>
+            <div class="chip-btn" data-speed="1.1">1.10x</div>
+            <div class="chip-btn" data-speed="1.25">1.25x</div>
+            <div class="chip-btn" data-speed="1.5">1.50x</div>
+            <div class="chip-btn" data-speed="1.75">1.75x</div>
+            <div class="chip-btn" data-speed="2.0">2.0x</div>
+        </div>
+    </div>
+
+    <!-- Offline Buffer Box -->
+    <div class="glass-box">
+        <div class="speed-header">
+            <span class="section-title" style="margin-bottom:0">📦 Modalità Offline</span>
+            <span style="font-size:10px; color:#38bdf8; font-weight:700;">Memoria Locale</span>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <select id="popup-buffer-select" style="flex:1; padding: 6px 8px; font-size:11px; background:#0f172a; color:#fff; border: 1px solid rgba(255,255,255,0.15); border-radius:8px; outline:none; cursor:pointer;">
+                <option value="1.0">Tutta la lezione (100%)</option>
+                <option value="0.5">Metà lezione (50%)</option>
+                <option value="60">60 minuti</option>
+                <option value="30">30 minuti</option>
+                <option value="15">15 minuti</option>
+            </select>
+            <button class="btn-ctrl" id="popup-btn-download-buffer" style="padding: 6px 12px; flex:0; font-size:11.5px; flex-direction:row; gap:4px; font-weight:700; background:#38bdf8; color:#0f172a;">
+                <span class="icon" style="font-size:13px;">📥</span>
+                <span>Scarica</span>
+            </button>
+        </div>
+
+        <!-- Live Download Progress inside Popup -->
+        <div class="buffer-progress-bar" id="popup-buffer-progress">
+            <div class="buffer-progress-fill" id="popup-buffer-fill"></div>
+        </div>
+        <div id="popup-buffer-status" style="font-size: 11px; color: #94a3b8; margin-top: 6px; text-align: center; min-height: 14px;">
+            Pronto per il salvataggio offline
+        </div>
+
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button class="btn-ctrl" id="popup-btn-open-player" style="flex:1; padding: 6px; font-size:11px; flex-direction:row; gap:4px;">
+                <span class="icon" style="font-size:13px;">📂</span>
+                <span>Player Offline</span>
+            </button>
+            <button class="btn-ctrl" id="popup-btn-save-mp4" style="flex:1; padding: 6px; font-size:11px; flex-direction:row; gap:4px;">
+                <span class="icon" style="font-size:13px;">💾</span>
+                <span>Salva MP4</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="glass-box" style="margin-top: 14px;">
+        <div class="section-title">Impostazioni Autologin SSO PoliMi</div>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="input-student-email" placeholder="codice.persona@polimi.it" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #f1f5f9; padding: 6px 10px; font-size: 11px; outline: none;">
+            <button id="btn-save-email" class="btn-ctrl" style="width: auto; padding: 6px 12px; font-weight: 700;">Salva</button>
+        </div>
+        <p style="font-size: 10px; color: #94a3b8; margin-top: 6px; line-height: 1.4;">Inserisci la tua email studente (es. codice@polimi.it). Al login su idbroker verrà inserita in automatico velocizzando l'accesso.</p>
+    </div>
+
+    <!-- Shortcuts Dropdown -->
+    <details style="margin-top: 14px;">
+        <summary>⌨️ Scorciatoie da tastiera</summary>
+        <table class="shortcut-table">
+            <tr><td><kbd>Spazio</kbd> / <kbd>K</kbd></td><td>Play / Pausa</td></tr>
+            <tr><td><kbd>→</kbd> / <kbd>←</kbd></td><td>+10s / −10s</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>→</kbd> / <kbd>←</kbd></td><td>+30s / −30s</td></tr>
+            <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Velocità +0.1x / −0.1x</td></tr>
+            <tr><td><kbd>R</kbd></td><td>Reset 1.0x / Alterna velocità</td></tr>
+            <tr><td><kbd>Z</kbd></td><td>🔍 Zoom 1.5x-3x & Pan con mouse</td></tr>
+            <tr><td><kbd>C</kbd></td><td>🎨 Filtri Contrasto / B&N Lavagna</td></tr>
+            <tr><td><kbd>I</kbd></td><td>🌙 Dark Mode (Inverti slide bianche)</td></tr>
+            <tr><td><kbd>A</kbd> / <kbd>B</kbd></td><td>🔁 Loop A-B ripetizione passaggio</td></tr>
+            <tr><td><kbd>X</kbd></td><td>🤫 Salto automatico pause di silenzio</td></tr>
+            <tr><td><kbd>N</kbd></td><td>📝 Prendi nota sincronizzata (Export MD)</td></tr>
+            <tr><td><kbd>S</kbd></td><td>📸 Copia Screenshot Slide negli appunti</td></tr>
+            <tr><td><kbd>P</kbd></td><td>🪟 Picture-in-Picture</td></tr>
+            <tr><td><kbd>F</kbd></td><td>Schermo intero</td></tr>
+            <tr><td><kbd>M</kbd></td><td>Muto / Audio</td></tr>
+            <tr><td><kbd>H</kbd></td><td>Mostra / Nascondi barra fluttuante</td></tr>
+        </table>
+    </details>
+
+    <script src="offline_db.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

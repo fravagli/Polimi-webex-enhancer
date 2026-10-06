@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoliMi Webex Enhancer - Player Offline</title>
+    <link rel="stylesheet" href="helper.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #070a12;
+            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Top Bar: Replaces Webex Header */
+        .webex-offline-topbar {
+            height: 48px;
+            background: rgba(13, 19, 33, 0.95);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .webex-offline-logo-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: -0.2px;
+        }
+
+        .webex-offline-logo-title img {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            object-fit: contain;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        .webex-offline-badge {
+            font-size: 10px;
+            background: rgba(56, 189, 248, 0.18);
+            color: #38bdf8;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .lecture-selector {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f8fafc;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12.5px;
+            font-weight: 500;
+            max-width: 420px;
+            width: 100%;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .lecture-selector:hover, .lecture-selector:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-top {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-top:hover {
+            background: #38bdf8;
+            color: #0f172a;
+            border-color: #38bdf8;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-top.active {
+            background: rgba(56, 189, 248, 0.25);
+            border-color: #38bdf8;
+            color: #38bdf8;
+        }
+
+        .player-eta-badge {
+            font-size: 11px;
+            color: #38bdf8;
+            font-weight: 700;
+            background: rgba(56, 189, 248, 0.12);
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            display: none;
+            letter-spacing: 0.2px;
+        }
+
+        /* Central Theater Area (Webex Mirror: Framed & Shaped) */
+        .stage-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #080c14;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 12px 20px 85px 20px;
+            box-sizing: border-box;
+            width: 100vw;
+        }
+
+        .offline-video-frame {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: min(100%, calc((100vh - 155px) * 16 / 9));
+            height: 100%;
+            max-height: calc(100vh - 155px);
+            aspect-ratio: 16 / 9;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #000000;
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.12);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        video#offline-video {
+            max-width: 100%;
+            max-height: 100%;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            outline: none;
+            border-radius: 14px;
+            transform-origin: center center;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Fullscreen Theater Override */
+        .stage-container:fullscreen,
+        .stage-container:-webkit-full-screen {
+            padding: 0 !important;
+            background: #000000 !important;
+        }
+
+        .stage-container:fullscreen .offline-video-frame,
+        .stage-container:-webkit-full-screen .offline-video-frame {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .stage-container:fullscreen video#offline-video,
+        .stage-container:-webkit-full-screen video#offline-video {
+            border-radius: 0 !important;
+        }
+
+        .stage-container:fullscreen #webex-helper-toolbar-container,
+        .stage-container:-webkit-full-screen #webex-helper-toolbar-container {
+            bottom: 75px !important;
+            left: 24px !important;
+            right: auto !important;
+            transform: none !important;
+            z-index: 2147483647 !important;
+        }
+
+        /* Video drag cursor when zoomed */
+        video#offline-video.zoomed {
+            cursor: grab;
+        }
+
+        video#offline-video.zoomed:active {
+            cursor: grabbing;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: #94a3b8;
+            text-align: center;
+            padding: 30px;
+            z-index: 10;
+        }
+
+        .empty-state-box {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-top: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 20px;
+            padding: 36px 40px;
+            max-width: 520px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .empty-state-icon {
+            font-size: 46px;
+            margin-bottom: 12px;
+            display: inline-block;
+            animation: bounceSlow 2.5s infinite ease-in-out;
+        }
+
+        @keyframes bounceSlow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .drag-box {
+            border: 2px dashed rgba(56, 189, 248, 0.45);
+            border-radius: 14px;
+            padding: 24px 20px;
+            background: rgba(56, 189, 248, 0.05);
+            cursor: pointer;
+            margin-top: 18px;
+            transition: all 0.2s ease;
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .drag-box:hover {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            color: #ffffff;
+            transform: scale(1.01);
+        }
+
+        /* Silence Indicator Inside Player */
+        .webex-silence-indicator {
+            position: absolute;
+            top: 18px;
+            right: 22px;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.5);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(56, 189, 248, 0.3);
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #38bdf8;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .webex-silence-indicator.active {
+            display: flex;
+        }
+
+        .webex-silence-indicator .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 8px #38bdf8;
+            animation: pulseFast 0.8s infinite alternate;
+        }
+
+        @keyframes pulseFast {
+            from { opacity: 0.4; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Docked Master Toolbar: Positioned directly beneath video at bottom center */
+        #webex-helper-toolbar-container {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 90;
+            transition: bottom 0.2s ease, opacity 0.3s ease;
+            width: min(calc(100vw - 32px), 960px) !important;
+            max-width: calc(100vw - 32px) !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
+        }
+
+        #webex-helper-toolbar-container .webex-quick-actions-bar {
+            position: static !important;
+            bottom: auto !important;
+            left: auto !important;
+            max-width: 100% !important;
+            justify-content: center !important;
+            overflow: visible !important;
+        }
+
+        /* Fullscreen click overlay to intercept native fullscreen clicks directly with user gesture */
+        .offline-fs-click-area {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 52px;
+            height: 48px;
+            z-index: 45;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        /* Ensure timeline markers align over HTML5 controls */
+        .offline-timeline-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            pointer-events: none;
+            z-index: 40;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar: PoliMi Offline Navigation -->
+    <header class="webex-offline-topbar">
+        <div class="webex-offline-logo-title">
+            <img src="images/logo32.png" alt="PoliMi Webex Enhancer Logo">
+            <span>PoliMi Webex Enhancer</span>
+            <span class="webex-offline-badge">Offline Player</span>
+        </div>
+
+        <div class="webex-top-lecture-wrapper" id="top-lecture-wrapper">
+            <button type="button" class="webex-top-lecture-pill" id="top-lecture-pill" title="Seleziona lezione da riprodurre">
+                <span style="font-size: 14px;">🎬</span>
+                <span class="pill-title-text" id="top-lecture-title">Seleziona lezione salvata...</span>
+                <span class="pill-count-badge" id="top-lecture-badge">0</span>
+                <span class="pill-chevron-icon">▾</span>
+            </button>
+            <div class="webex-top-lecture-dropdown" id="top-lecture-dropdown">
+                <div class="top-lecture-search-row">
+                    <input type="text" id="top-lecture-search-input" placeholder="🔍 Cerca lezione salvata..." autocomplete="off">
+                </div>
+                <div class="top-lecture-list" id="top-lecture-list">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+            <!-- Hidden fallback for programmatic triggers -->
+            <select id="lecture-dropdown" style="display: none;"></select>
+        </div>
+
+        <div class="topbar-actions">
+            <div id="player-eta-badge" class="player-eta-badge">⏱️ Fine ore --:--</div>
+            <button class="btn-top" id="btn-fullscreen-toggle" title="Schermo intero (F)">
+                <span id="btn-fullscreen-toggle-label">⛶ Schermo Intero</span>
+            </button>
+            <button class="btn-top" id="btn-toggle-library" title="Apri libreria offline per gestire corsi e cartelle">
+                <span>📁 Libreria Offline</span>
+            </button>
+            <button class="pc-mirror-status-badge" id="btn-link-pc-folder" title="Specchio esatto cartella del PC">
+                <span id="pc-mirror-icon">💾</span>
+                <span id="pc-mirror-label">Specchio PC (Non collegato)</span>
+            </button>
+            <button class="btn-top" id="btn-open-file" title="Apri un singolo file video locale">
+                <span>📂 Apri File Locale</span>
+            </button>
+            <input type="file" id="file-input" accept="video/*" style="display: none;">
+        </div>
+    </header>
+
+    <!-- Stage Container (Centered Video Theater) -->
+    <main class="stage-container" id="player-container">
+        <!-- Silence acceleration indicator -->
+        <div class="webex-silence-indicator" id="offline-silence-indicator">
+            <span class="pulse-dot"></span>
+            <span id="offline-silence-text">🤫 SILENZIO (3.0x)</span>
+        </div>
+
+        <!-- Empty state placeholder -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-state-box">
+                <span class="empty-state-icon">🎬</span>
+                <h2 style="font-size: 20px; color: #f8fafc; margin-bottom: 8px;">Nessun video in riproduzione</h2>
+                <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.5;">
+                    Seleziona una lezione dal menu in alto o dalla tua libreria offline, oppure trascina un file video direttamente in questa finestra.
+                </p>
+                <div class="drag-box" id="drop-zone">
+                    <span>📥 Trascina qui un file video (.mp4) oppure clicca per aprire</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Framed Video Theater (Shaped like Webex) -->
+        <div class="offline-video-frame" id="offline-video-frame" style="display: none;">
+            <video id="offline-video" playsinline></video>
+            <div class="webex-video-cc-overlay is-hidden" id="offline-video-cc-display"></div>
+            <div class="offline-timeline-overlay" id="offline-timeline-overlay"></div>
+
+            <!-- Custom Liquid Glass Controls Bar (Immune to Chrome native seeking desync) -->
+            <div class="webex-inpage-controls-bar" id="offline-inpage-controls-bar">
+                <div class="webex-inpage-timeline-row">
+                    <span class="webex-inpage-time" id="offline-current-time">00:00</span>
+                    <div class="webex-inpage-timeline-track" id="offline-timeline-track">
+                        <div class="webex-inpage-timeline-fill" id="offline-timeline-fill"></div>
+                        <div class="webex-inpage-timeline-handle" id="offline-timeline-handle"></div>
+                        <div class="webex-inpage-timeline-tooltip" id="offline-timeline-tooltip">00:00</div>
+                    </div>
+                    <span class="webex-inpage-time" id="offline-duration-time">00:00</span>
+                </div>
+                <div class="webex-inpage-buttons-row">
+                    <div class="inpage-btn-group-left">
+                        <button type="button" class="inpage-btn" id="offline-btn-play" title="Play/Pausa (Spazio)">▶ Play</button>
+                        <button type="button" class="inpage-btn" id="offline-btn-rwd30" title="Indietro 30s (Shift+←)">-30s</button>
+                        <button type="button" class="inpage-btn inpage-btn-primary" id="offline-btn-rwd10" title="Indietro 10s (←)">-10s</button>
+                        <button type="button" class="inpage-btn inpage-btn-primary" id="offline-btn-fwd10" title="Avanti 10s (→)">+10s</button>
+                        <button type="button" class="inpage-btn" id="offline-btn-fwd30" title="Avanti 30s (Shift+→)">+30s</button>
+                        <div class="inpage-volume-box">
+                            <span style="font-size: 13px; cursor: pointer;" id="offline-vol-icon" title="Muto / Riattiva Audio">🔊</span>
+                            <input type="range" class="inpage-vol-slider" id="offline-vol-slider" min="0" max="1" step="0.05" value="1" title="Volume">
+                        </div>
+                        <span class="inpage-speed-badge" id="offline-speed-badge" title="Velocità riproduzione (Click per cambiare)">1.0x</span>
+                    </div>
+                    <div class="inpage-btn-group-right">
+                        <button type="button" class="inpage-btn" id="offline-btn-fullscreen" title="Schermo intero (F)">⛶ Schermo intero</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Master Liquid Glass Toolbar (Directly beneath video) -->
+        <div class="webex-helper-toolbar-container collapsed" id="webex-helper-toolbar-container">
+            <!-- Collapsed Quick Actions Bar (Identical to Webex) -->
+            <div class="webex-quick-actions-bar" id="webex-quick-actions-bar">
+                <!-- 1. Velocità Video -->
+                <div class="webex-floating-box webex-qa-speed-group">
+                    <button type="button" id="offline-qa-speed-minus" title="Rallenta (-0.1x)">−</button>
+                    <span id="offline-qa-speed-val">1.00x</span>
+                    <button type="button" id="offline-qa-speed-plus" title="Accelera (+0.1x)">+</button>
+                </div>
+
+                <!-- 2. PiP -->
+                <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-pip" title="Picture in Picture (P)">🪟</div>
+
+                <!-- 3. Screenshot / Slide con Flyout -->
+                <div class="webex-tool-with-flyout webex-qa-tool-wrapper">
+                    <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-snap" title="Cattura Slide (S)">📸</div>
+                    <div class="webex-action-flyout webex-qa-flyout" id="offline-qa-slide-flyout">
+                        <div class="webex-flyout-title">Azione Slide</div>
+                        <div class="webex-flyout-chips">
+                            <button class="webex-flyout-chip" data-slide-mode="copy">📋 Solo Appunti</button>
+                            <button class="webex-flyout-chip" data-slide-mode="download">💾 Solo Download</button>
+                            <button class="webex-flyout-chip" data-slide-mode="both">⚡ Entrambi</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Zoom con Flyout -->
+                <div class="webex-tool-with-flyout webex-qa-tool-wrapper">
+                    <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-zoom" title="Zoom & Pan lavagna (Z)">🔍</div>
+                    <div class="webex-action-flyout webex-qa-flyout" id="offline-qa-zoom-flyout">
+                        <div class="webex-flyout-title">Ingrandimento Lavagna</div>
+                        <div class="webex-flyout-chips">
+                            <button class="webex-flyout-chip" data-zoom="1.5">1.5x</button>
+                            <button class="webex-flyout-chip" data-zoom="2.0">2.0x</button>
+                            <button class="webex-flyout-chip" data-zoom="3.0">3.0x</button>
+                            <button class="webex-flyout-chip" data-zoom="1.0">Reset</button>
+                        </div>
+                        <div class="webex-flyout-slider-row" style="margin-top: 6px;">
+                            <span class="webex-flyout-slider-lbl" id="offline-qa-zoom-val">Zoom: 1.0x</span>
+                            <input type="range" class="webex-helper-vol-slider" id="offline-qa-zoom-slider" min="1.0" max="5.0" step="0.1" value="1.0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Note -->
+                <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-notes" title="Note & Commenti (N)">📝</div>
+
+                <!-- 6. Segnalibro con Flyout -->
+                <div class="webex-tool-with-flyout webex-qa-tool-wrapper">
+                    <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-bm" title="Aggiungi Segnalibro (B)">📌</div>
+                    <div class="webex-action-flyout webex-qa-flyout" id="offline-qa-bm-flyout">
+                        <div class="webex-flyout-header-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 6px;">
+                            <span class="webex-flyout-title" style="margin: 0;">Segnalibri</span>
+                            <button class="webex-flyout-add-btn" id="offline-qa-bm-add" style="background: #38bdf8; color: #0f172a; border: none; border-radius: 6px; padding: 2px 7px; font-weight: 700; font-size: 10px; cursor: pointer;">+ Aggiungi ora</button>
+                        </div>
+                        <div class="webex-bm-quick-list" id="offline-qa-bm-list"></div>
+                    </div>
+                </div>
+
+                <!-- 7. Audio Boost con Flyout -->
+                <div class="webex-tool-with-flyout webex-qa-tool-wrapper">
+                    <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-boost" title="Amplificatore Volume Boost">🔊</div>
+                    <div class="webex-action-flyout webex-qa-boost-flyout" id="offline-qa-boost-flyout">
+                        <div class="webex-flyout-title">Amplificatore Volume</div>
+                        <div class="webex-flyout-slider-row" style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                            <input type="range" class="webex-helper-vol-slider" id="offline-qa-boost-slider" min="1.0" max="3.0" step="0.25" value="1.0">
+                            <span class="webex-flyout-slider-lbl" id="offline-qa-boost-val" style="min-width: 44px; text-align: right; font-weight: 700; color: #38bdf8;">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Trascrizione -->
+                <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-subtitles" title="Trascrizione e Sottotitoli (T)">💬</div>
+
+                <!-- 9. Sottotitoli a schermo (CC) -->
+                <div class="webex-floating-box webex-qa-icon-btn" id="offline-qa-cc" title="Sottotitoli a schermo (CC)">CC</div>
+
+                <!-- 10. Ingrandisci la barra (Frecce verso l'esterno) -->
+                <button type="button" class="webex-floating-box webex-qa-icon-btn" id="offline-qa-expand" title="Espandi barra comandi (H)" style="border: 1px solid rgba(255,255,255,0.15);">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Expanded Panel View -->
+            <div class="webex-helper-panel" id="webex-helper-panel-box">
+                <!-- Panel Header: Title + Drag Handle + ETA + Minimize Button -->
+                <div class="webex-helper-panel-header">
+                    <div class="webex-helper-title">
+                        <img src="images/logo32.png" style="width: 20px; height: 20px; border-radius: 5px;">
+                        <span>PoliMi Webex Enhancer - Comandi</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="webex-helper-eta-row">
+                            <span>⏳ Fine stimata:</span>
+                            <span class="webex-helper-eta-val" id="offline-eta-display">--:--</span>
+                        </div>
+                        <button class="webex-helper-close-btn" id="offline-collapse-btn" title="Minimizza comandi (H)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                                <polyline points="4 14 10 14 10 20"></polyline>
+                                <polyline points="20 10 14 10 14 4"></polyline>
+                                <line x1="14" y1="10" x2="21" y2="3"></line>
+                                <line x1="10" y1="14" x2="3" y2="21"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 1: Seeking, Speeds & Audio Boost -->
+                <div class="webex-helper-row-top">
+                    <!-- Quick Seek Buttons (-30, -10, Play/Pause, +10, +30) -->
+                    <div class="webex-helper-seek-group">
+                        <button class="webex-helper-seek-btn" id="offline-seek-b30" title="Riavvolgi 30 secondi (Shift + Freccia Sinistra)">−30s</button>
+                        <button class="webex-helper-seek-btn webex-helper-seek-primary" id="offline-seek-b10" title="Riavvolgi 10 secondi (J / Freccia Sinistra)">−10s</button>
+                        <button class="webex-helper-seek-btn" id="offline-play-pause-btn" title="Play / Pausa (Spazio / K)">▶</button>
+                        <button class="webex-helper-seek-btn webex-helper-seek-primary" id="offline-seek-f10" title="Avanza 10 secondi (L / Freccia Destra)">+10s</button>
+                        <button class="webex-helper-seek-btn" id="offline-seek-f30" title="Avanza 30 secondi (Shift + Freccia Destra)">+30s</button>
+                    </div>
+
+                    <!-- Speed Fine-Tuning & Presets -->
+                    <div class="webex-helper-speed-row">
+                        <button class="webex-helper-speed-btn" id="offline-speed-minus" title="Rallenta (-0.1x)">−</button>
+                        <span class="webex-helper-speed-val" id="offline-speed-display">1.0x</span>
+                        <button class="webex-helper-speed-btn" id="offline-speed-plus" title="Accelera (+0.1x)">+</button>
+                    </div>
+                    <div class="webex-helper-chips-container webex-helper-chips">
+                        <button class="webex-helper-chip" data-speed="0.9">0.9x</button>
+                        <button class="webex-helper-chip active" data-speed="1.0">1.0x</button>
+                        <button class="webex-helper-chip" data-speed="1.1">1.1x</button>
+                        <button class="webex-helper-chip" data-speed="1.25">1.25x</button>
+                        <button class="webex-helper-chip" data-speed="1.5">1.5x</button>
+                        <button class="webex-helper-chip" data-speed="1.75">1.75x</button>
+                        <button class="webex-helper-chip" data-speed="2.0">2.0x</button>
+                    </div>
+
+                    <!-- Audio Volume Boost Slider -->
+                    <div class="webex-helper-vol-boost-box" title="Amplificatore volume audio oltre il 100%">
+                        <span class="webex-helper-vol-boost-lbl">🔊 Boost:</span>
+                        <input type="range" class="webex-helper-vol-slider" id="offline-vol-boost" min="1.0" max="3.0" step="0.1" value="1.0">
+                        <span class="webex-helper-vol-boost-val" id="offline-vol-boost-val" style="font-size: 11px; font-weight: 700; color: #38bdf8;">100%</span>
+                    </div>
+                </div>
+
+                <!-- Categorized Study Actions Row -->
+                <div class="webex-helper-categories-row">
+                    <!-- Category 1: Visualizzazione (Hero Priority, flex: 1.35) -->
+                    <div class="webex-cat-group cat-visualizzazione" id="offline-cat-view">
+                        <div class="webex-cat-title">Visualizzazione</div>
+                        <div class="webex-cat-tools">
+                            <!-- PiP (Compact) -->
+                            <button class="webex-helper-action-btn webex-btn-compact" id="offline-action-pip" title="Picture in Picture fluttuante (P)">
+                                <span class="icon">🪟</span>
+                                <span>PiP</span>
+                            </button>
+
+                            <!-- Zoom & Pan (Hero) -->
+                            <div class="webex-tool-with-flyout" id="offline-zoom-tool-wrapper">
+                                <button class="webex-helper-action-btn webex-btn-hero" id="offline-action-zoom" title="Zoom & Pan lavagna (Z)">
+                                    <span class="icon">🔍</span>
+                                    <span id="offline-action-zoom-lbl">Zoom</span>
+                                </button>
+                                <div class="webex-action-flyout" id="offline-zoom-flyout">
+                                    <div class="webex-flyout-title">Ingrandimento Lavagna</div>
+                                    <div class="webex-flyout-chips">
+                                        <button class="webex-flyout-chip" data-zoom="1.5">1.5x</button>
+                                        <button class="webex-flyout-chip" data-zoom="2.0">2.0x</button>
+                                        <button class="webex-flyout-chip" data-zoom="3.0">3.0x</button>
+                                        <button class="webex-flyout-chip" data-zoom="1.0">Reset</button>
+                                    </div>
+                                    <div class="webex-flyout-slider-row" id="offline-zoom-slider-box">
+                                        <span class="webex-flyout-slider-lbl" id="offline-zoom-slider-val">Ingrandimento: 1.0x</span>
+                                        <input type="range" class="webex-helper-vol-slider" id="offline-zoom-slider" min="1.0" max="10.0" step="0.1" value="1.0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filtro (Hero) -->
+                            <div class="webex-tool-with-flyout" id="offline-filter-tool-wrapper">
+                                <button class="webex-helper-action-btn webex-btn-hero" id="offline-action-filter" title="Filtri visivi, luce blu e negativo (C)">
+                                    <span class="icon">🎨</span>
+                                    <span id="offline-action-filter-lbl">Filtro</span>
+                                </button>
+                                <div class="webex-action-flyout" id="offline-filter-flyout">
+                                    <div class="webex-flyout-title">Filtri Visivi Lavagna</div>
+                                    <div class="webex-flyout-chips">
+                                        <button class="webex-flyout-chip" data-filter="normal">Normale</button>
+                                        <button class="webex-flyout-chip" data-filter="contrast">Contrasto</button>
+                                        <button class="webex-flyout-chip" data-filter="bw">B&N</button>
+                                        <button class="webex-flyout-chip" data-filter="blue_light">Luce Blu</button>
+                                        <button class="webex-flyout-chip" data-filter="negative">Negativo</button>
+                                    </div>
+                                    <div class="webex-flyout-slider-row" id="offline-filter-slider-box">
+                                        <span class="webex-flyout-slider-lbl" id="offline-filter-slider-val">Intensità: 100%</span>
+                                        <input type="range" class="webex-helper-vol-slider" id="offline-filter-slider" min="0" max="100" step="5" value="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 2: Appunti (flex: 1.2) -->
+                    <div class="webex-cat-group cat-appunti" id="offline-cat-notes">
+                        <div class="webex-cat-title">Appunti</div>
+                        <div class="webex-cat-tools">
+                            <!-- Slide (Hero with Flyout) -->
+                            <div class="webex-tool-with-flyout" id="offline-slide-tool-wrapper">
+                                <button class="webex-helper-action-btn webex-btn-hero" id="offline-action-snap" title="Copia o scarica slide HD (S)">
+                                    <span class="icon">📸</span>
+                                    <span id="offline-action-slide-lbl">Slide</span>
+                                </button>
+                                <div class="webex-action-flyout" id="offline-slide-flyout">
+                                    <div class="webex-flyout-title">Azione Slide</div>
+                                    <div class="webex-flyout-chips">
+                                        <button class="webex-flyout-chip" data-slide-mode="copy">📋 Solo Appunti</button>
+                                        <button class="webex-flyout-chip" data-slide-mode="download">💾 Solo Download</button>
+                                        <button class="webex-flyout-chip" data-slide-mode="both">⚡ Entrambi</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Note (Compact) -->
+                            <button class="webex-helper-action-btn webex-btn-compact" id="offline-action-notes" title="Prendi note con export Markdown (N)">
+                                <span class="icon">📝</span>
+                                <span>Note</span>
+                            </button>
+
+                            <!-- Segnalibro (Compact) -->
+                            <div class="webex-tool-with-flyout" id="offline-bm-tool-wrapper">
+                                <button class="webex-helper-action-btn webex-btn-compact" id="offline-action-bm" title="Aggiungi segnalibro al minuto attuale (B)">
+                                    <span class="icon">📌</span>
+                                    <span id="offline-action-bm-lbl">Segnalibro</span>
+                                </button>
+                                <div class="webex-action-flyout" id="offline-bm-flyout">
+                                    <div class="webex-flyout-header-row">
+                                        <span class="webex-flyout-title">Segnalibri Lezione</span>
+                                        <button class="webex-flyout-add-btn" id="offline-bm-quick-add">+ Aggiungi ora</button>
+                                    </div>
+                                    <div class="webex-bm-quick-list" id="offline-bm-quick-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 3: Avanzate (flex: 1.1) -->
+                    <div class="webex-cat-group cat-avanzate" id="offline-cat-advanced">
+                        <div class="webex-cat-title">Avanzate</div>
+                        <div class="webex-cat-tools">
+                            <!-- Silenzi (Standard Hierarchy) -->
+                            <div class="webex-tool-with-flyout" id="offline-silence-tool-wrapper">
+                                <button class="webex-helper-action-btn webex-btn-standard" id="offline-action-silence" title="Salto automatico pause di silenzio (X)">
+                                    <span class="icon">🤫</span>
+                                    <span id="offline-action-silence-lbl">Silenzi</span>
+                                </button>
+                                <div class="webex-action-flyout webex-silence-flyout-box" id="offline-silence-flyout">
+                                    <div class="webex-flyout-title" style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Salto Silenzi</span>
+                                        <button type="button" class="webex-silence-info-toggle-btn" id="offline-silence-info-btn" title="Guida agli slider" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; color: #38bdf8; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1; padding: 0;">ℹ️</button>
+                                    </div>
+                                    <div class="webex-silence-info-card" id="offline-silence-info-card" style="display: none;">
+                                        <div style="font-weight: 700; color: #38bdf8; margin-bottom: 5px;">ℹ️ Guida agli Slider:</div>
+                                        <div style="margin-bottom: 5px;"><b style="color: #fff;">1. Velocità:</b> Velocità di riproduzione durante il silenzio (es. 3x-8x per superare le pause rapidamente).</div>
+                                        <div style="margin-bottom: 5px;"><b style="color: #fff;">2. Soglia:</b> Livello audio sotto il quale è considerato silenzio. Guarda la % <span style="color: #38bdf8; font-weight: 600;">Attuale</span> mentre il docente non parla per impostarlo appena sopra quel valore.</div>
+                                        <div><b style="color: #fff;">3. Ritardo Inizio:</b> Secondi di silenzio continuativo prima di accelerare (evita scatti tra una parola e l'altra).</div>
+                                    </div>
+                                    <div class="webex-flyout-slider-row">
+                                        <span class="webex-flyout-slider-lbl" id="offline-silence-speed-lbl">Velocità: 3.0x</span>
+                                        <input type="range" class="webex-helper-vol-slider" id="offline-silence-speed-slider" min="2.0" max="16.0" step="0.5" value="3.0">
+                                    </div>
+                                    <div class="webex-flyout-slider-row" style="margin-top: 8px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;"><span class="webex-flyout-slider-lbl" id="offline-silence-thresh-lbl">Soglia: 3.5%</span><span style="font-size: 10px; color: #38bdf8;">Attuale: <b id="offline-silence-live-vol">0.0%</b></span></div>
+                                        <input type="range" class="webex-helper-vol-slider" id="offline-silence-thresh-slider" min="0" max="10" step="0.5" value="2">
+                                    </div>
+                                    <div class="webex-flyout-slider-row" style="margin-top: 8px;">
+                                        <span class="webex-flyout-slider-lbl" id="offline-silence-tol-lbl">Ritardo Inizio: 1.0s</span>
+                                        <input type="range" class="webex-helper-vol-slider" id="offline-silence-tol-slider" min="0.1" max="3.0" step="0.1" value="1.0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loop A-B (Standard Hierarchy) -->
+                            <div class="webex-tool-with-flyout" id="offline-loop-tool-wrapper">
+                                <button class="webex-helper-action-btn webex-btn-standard" id="offline-action-loop" title="Loop ripetizione A-B (A/B)">
+                                    <span class="icon">🔁</span>
+                                    <span id="offline-action-loop-lbl">Loop</span>
+                                </button>
+                                <div class="webex-action-flyout" id="offline-loop-flyout">
+                                    <div class="webex-flyout-title" id="offline-loop-status-title">Loop Ripetizione A-B</div>
+                                    <div class="webex-flyout-step-row">
+                                        <button class="webex-flyout-step-btn" id="offline-loop-set-a">📍 Punto A</button>
+                                        <button class="webex-flyout-step-btn" id="offline-loop-set-b">📍 Punto B</button>
+                                        <button class="webex-flyout-step-btn danger" id="offline-loop-reset">✕ Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sottotitoli / Trascrizione Interattiva (Spotify Style) -->
+                            <button class="webex-helper-action-btn webex-btn-standard" id="offline-action-subtitles" title="Trascrizione e Sottotitoli (T)">
+                                <span class="icon">💬</span>
+                                <span id="offline-action-subtitles-lbl">Trascrizione</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Spotify-Style Interactive Subtitles & Live Lyrics Transcript Modal (Identical to Webex) -->
+    <div class="webex-subtitles-modal" id="offline-subtitles-panel" style="display: none;">
+        <div class="webex-subtitles-header" id="offline-subtitles-header">
+            <div class="webex-subtitles-title-box">
+                <span class="webex-subtitles-title">Trascrizione</span>
+                <span class="webex-subtitles-status-badge" id="offline-subtitles-count-badge">0 frasi</span>
+            </div>
+            <div class="webex-subtitles-actions">
+                <button class="webex-subtitles-action-btn" id="offline-subtitles-toggle-cc" title="Mostra/Nascondi sottotitoli a schermo (CC)">
+                    <span>CC Schermo</span>
+                </button>
+                <button class="webex-subtitles-close-btn" id="offline-subtitles-close" title="Chiudi (T / Esc)">✕ Chiudi</button>
+            </div>
+        </div>
+        <div class="webex-subtitles-search-box">
+            <input type="text" class="webex-subtitles-search-input" id="offline-subtitles-search" placeholder="🔍 Cerca qualsiasi parola...">
+        </div>
+        <div class="webex-subtitles-toolbar" id="offline-subtitles-toolbar" style="display: none;">
+            <div style="display: inline-flex; align-items: stretch; gap: 2px;">
+                <button class="webex-subtitles-action-btn" id="offline-subtitles-btn-ai" title="Estrai traccia audio e genera trascrizione vocale AI (senza microfono)" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.4), rgba(56, 189, 248, 0.25)); border-color: #38bdf8; color: #ffffff; font-weight: 700; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+                    <span>⚡ Scarica Audio & Trascrivi con AI</span>
+                </button>
+                <button class="webex-subtitles-action-btn" id="offline-subtitles-btn-ai-settings" title="Configurazione AI Whisper (Chiave API, Limiti Free Tier e Guida)" style="background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; border-top-left-radius: 4px; border-bottom-left-radius: 4px; padding: 5px 8px;">
+                    <span>⚙️</span>
+                </button>
+            </div>
+            <button class="webex-subtitles-action-btn" id="offline-subtitles-btn-paste" title="Incolla trascrizione o testo manuale">
+                <span>📋 Incolla Testo</span>
+            </button>
+            <label class="webex-subtitles-action-btn" title="Carica file sottotitoli (.vtt, .srt, .sbv, .txt, .json)">
+                <span>📁 Carica File</span>
+                <input type="file" accept=".vtt,.srt,.sbv,.txt,.json" id="offline-subtitles-file-input" style="display: none;">
+            </label>
+        </div>
+        <div class="webex-subtitles-list" id="offline-subtitles-cues-list">
+            <!-- Rendered dynamically -->
+        </div>
+        <div class="webex-subtitles-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px;">
+            <span class="webex-subtitles-footer-info">💡 Clicca su una parola per saltare • T o Esc per chiudere</span>
+            <button class="webex-subtitles-action-btn" id="offline-subtitles-btn-export" title="Esporta trascrizione in un file di testo (.txt)" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 4px 8px; margin-right: 8px;">
+                <span>📄 Esporta Testo</span>
+            </button>
+            <button class="webex-subtitles-action-btn danger-btn" id="offline-subtitles-btn-delete" title="Elimina questa traccia di sottotitoli e torna alla schermata iniziale" style="display: none; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 4px 8px;">
+                <span>🗑️ Elimina Traccia</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- In-Page Custom File Explorer Modal (iOS Liquid Glass File Manager) -->
+    <div class="webex-explorer-modal-overlay" id="offline-explorer-modal" style="display: none;">
+        <div class="webex-explorer-modal">
+            <!-- Modal Header -->
+            <div class="webex-explorer-header">
+                <div class="webex-explorer-title-box">
+                    <span style="font-size: 20px;">📁</span>
+                    <div>
+                        <div class="webex-explorer-title">Libreria Lezioni Offline</div>
+                        <div style="font-size: 11px; color: #94a3b8;">Organizza i tuoi corsi, cartelle e registrazioni salvate in locale</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn-top" id="btn-modal-sync-pc" style="font-size: 11.5px; padding: 4px 10px; background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399;" title="Sincronizza bidirezionalmente con la cartella del PC">
+                        <span>🔄 Sincronizza PC</span>
+                    </button>
+                    <button class="btn-top" id="btn-modal-link-folder" style="font-size: 11.5px; padding: 4px 10px;" title="Collega o cambia la cartella PC dello specchio">
+                        <span id="modal-link-pc-label">💾 Collega Specchio PC</span>
+                    </button>
+                    <button class="webex-helper-close-btn" id="btn-close-explorer" title="Chiudi libreria (Esc)">✕</button>
+                </div>
+            </div>
+
+            <!-- Modal Body (Sidebar + Content) -->
+            <div class="webex-explorer-body">
+                <!-- Sidebar: Course Folders -->
+                <aside class="webex-explorer-sidebar">
+                    <div class="webex-explorer-sidebar-header">
+                        <span>Corsi & Cartelle</span>
+                        <button class="btn-top" id="btn-explorer-new-folder" style="padding: 2px 7px; font-size: 11px;">+ Nuova</button>
+                    </div>
+                    <div class="webex-explorer-folder-list" id="explorer-folder-list">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </aside>
+
+                <!-- Content Area: Search, Sort & Lecture Cards -->
+                <section class="webex-explorer-content">
+                    <!-- Toolbar -->
+                    <div class="webex-explorer-toolbar">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="explorer-current-folder-title" style="font-size: 13px; font-weight: 700; color: #38bdf8;">📁 Tutte le lezioni</span>
+                            <span id="explorer-lecture-count-badge" style="font-size: 11px; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 6px; color: #94a3b8;">0</span>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="text" id="explorer-search-input" placeholder="🔍 Cerca lezione..." style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 5px 10px; font-size: 11.5px; color: #f1f5f9; outline: none; width: 170px;">
+                            
+                            <select id="explorer-sort-select" class="webex-explorer-sort-select">
+                                <option value="date_desc">📅 Più recenti prima</option>
+                                <option value="date_asc">📅 Meno recenti prima</option>
+                                <option value="name_asc">🔤 Nome (A - Z)</option>
+                                <option value="name_desc">🔤 Nome (Z - A)</option>
+                                <option value="size_desc">💾 Dimensione (Maggiore)</option>
+                                <option value="duration_desc">⏱️ Durata (Più lunga)</option>
+                            </select>
+
+                            <button id="btn-purge-library" title="Svuota completamente la libreria (cancella registrazioni e trascrizioni locali)" style="padding: 5px 9px; font-size: 11px; font-weight: 600; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; border-radius: 8px; cursor: pointer; transition: all 0.15s ease;">🗑️ Svuota</button>
+                        </div>
+                    </div>
+
+                    <!-- Lecture Cards List -->
+                    <div class="webex-explorer-file-list" id="explorer-file-list">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="offline_db.js"></script>
+    <script src="mediabunny.min.js"></script>
+    <script src="ai_transcriber.js"></script>
+    <script src="offline_player.js"></script>
+</body>
+</html>
