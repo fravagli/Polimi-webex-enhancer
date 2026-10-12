@@ -230,6 +230,25 @@
             if (this.isWorkletLoaded || this.isWorkletLoading || !this.audioCtx) return;
             this.isWorkletLoading = true;
             try {
+                // Safety: Check if WebAssembly compilation is allowed under current page CSP
+                let isWasmAllowed = false;
+                try {
+                    const testWasm = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]);
+                    isWasmAllowed = typeof WebAssembly !== "undefined" && WebAssembly.validate(testWasm);
+                } catch (cspErr) {
+                    isWasmAllowed = false;
+                }
+
+                if (!isWasmAllowed) {
+                    console.warn("[PoliMiAudioEnhancer] WebAssembly is restricted by page CSP. RNNoise AI bypassed; DSP audio filters (Passa-Alto, Passa-Basso, Noise Gate, Boost) remain active.");
+                    this.isWorkletLoading = false;
+                    this.isWorkletLoaded = false;
+                    this.settings.rnnoiseEnabled = false;
+                    this.updateRNNoiseRouting();
+                    this.notifyChange();
+                    return;
+                }
+
                 // Fetch WASM binary
                 const wasmUrl = (typeof chrome !== "undefined" && chrome.runtime) ?
                     chrome.runtime.getURL("rnnoise.wasm") : "rnnoise.wasm";
@@ -250,8 +269,12 @@
                 // Create Noise Gate worklet node
                 this.createNoiseGateNode();
             } catch (err) {
-                console.warn("[PoliMiAudioEnhancer] Failed to load AudioWorklet/WASM:", err);
+                console.warn("[PoliMiAudioEnhancer] AudioWorklet notice:", err);
                 this.isWorkletLoading = false;
+                this.isWorkletLoaded = false;
+                this.settings.rnnoiseEnabled = false;
+                this.updateRNNoiseRouting();
+                this.notifyChange();
             }
         }
 

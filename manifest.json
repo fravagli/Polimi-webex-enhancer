@@ -1,6 +1,6 @@
 {
   "name": "PoliMi Webex Enhancer",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "manifest_version": 3,
   "description": "Ottimizzazione e funzionalità avanzate per lo studio e la visione offline delle videolezioni PoliMi su Webex e SharePoint.",
   "icons": {
@@ -27,8 +27,18 @@
     "storage",
     "downloads",
     "unlimitedStorage",
-    "webRequest"
+    "webRequest",
+    "declarativeNetRequest"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
   "host_permissions": [
     "*://*.webex.com/*",
     "*://*.wbx2.com/*",

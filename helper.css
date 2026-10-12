@@ -3695,14 +3695,18 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    background: rgba(0, 0, 0, 0.7) !important;
+    background: rgba(0, 0, 0, 0.75) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
     z-index: 2147483647 !important;
-    display: flex !important;
+    display: none !important;
     align-items: center !important;
     justify-content: center !important;
     animation: webexFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.webex-denoise-overlay.is-open {
+    display: flex !important;
 }
 
 .webex-denoise-modal {

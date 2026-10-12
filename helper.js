@@ -4617,18 +4617,18 @@ if (window.WebexOfflineDB) {
             if (window.__polimiAudioEnhancer && vid) {
                 window.__polimiAudioEnhancer.attachVideo(vid);
             }
-            overlay.style.display = "flex";
+            overlay.classList.add("is-open");
         }
 
         function closeModal() {
-            overlay.style.display = "none";
+            overlay.classList.remove("is-open");
         }
 
         function toggleModal() {
-            if (overlay.style.display === "none" || !overlay.style.display) {
-                openModal();
-            } else {
+            if (overlay.classList.contains("is-open")) {
                 closeModal();
+            } else {
+                openModal();
             }
         }
 
@@ -5864,9 +5864,9 @@ if (window.WebexOfflineDB) {
         }
 
         const openDenoise = document.getElementById("webex-denoise-overlay");
-        if (openDenoise && openDenoise.style.display !== "none") {
+        if (openDenoise && openDenoise.classList.contains("is-open")) {
             if (event.key === "Escape") {
-                openDenoise.style.display = "none";
+                openDenoise.classList.remove("is-open");
             }
             return;
         }
