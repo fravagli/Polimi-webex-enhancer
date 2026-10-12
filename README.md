@@ -23,6 +23,21 @@ Uno dei punti di forza dell'estensione è la capacità di trascrivere automatica
 
 ---
 
+### 🎙️ Pulizia Audio & Rimozione Rumore Neurale (RNNoise AI WASM)
+Spesso le registrazioni dei docenti presentano microfoni rumorosi, ventole dei proiettori d'aula o ronzii dell'impianto elettrico. L'estensione integra una pipeline di elaborazione audio in tempo reale basata su **WebAssembly e Web Audio API**:
+* **🧠 Soppressione Rumore Neurale RNNoise (AI)**: Una rete neurale ricorrente (RNN) compilata in WASM che analizza il flusso vocale a 48kHz e isola la voce del professore, rimuovendo istantaneamente fruscii continui, rumore delle ventole e rimbombo d'aula.
+* **⚡ Filtro Anti-Ronzio (High-Pass DSP)**: Taglia le frequenze spurie dell'impianto di alimentazione (50/60 Hz), colpi sulla cattedra e rombi a bassa frequenza.
+* **🔇 Filtro Anti-Fruscio (Low-Pass / De-Hiss DSP)**: Attenua sibili metallici e fruscii bianchi acuti dei microfoni a spilla o delle webcam.
+* **🤫 Noise Gate Intelligente**: Silenzia automaticamente il rumore residuo di fondo nei secondi di pausa in cui il professore non parla.
+* **⚡ Preset Rapidi**:
+  * *Voce Chiara (Consigliato)*: RNNoise AI + Anti-Ronzio 95Hz + De-Hiss 8.5kHz.
+  * *Aula Rumorosa / Ventole*: RNNoise AI + Anti-Ronzio 120Hz + Noise Gate attivo.
+  * *Solo Filtri*: Filtri DSP leggeri senza intelligenza artificiale.
+  * *Originale*: Disattiva istantaneamente tutti i filtri.
+* **Accesso Immediato**: Pulsante dedicato `🎙️` sia nella barra rapida che nella sezione trascrizione della barra estesa (disponibile sia online che offline).
+
+---
+
 ### 📚 Player Offline Integrato e Gestione della Libreria
 L'estensione include un **Player Offline completo e indipendente**, sviluppato per consentire lo studio anche in treno, aule studio senza Wi-Fi o in mobilità:
 * **Libreria locale delle lezioni**: Un pannello dedicato che mostra tutte le lezioni salvate in memoria locale con data, durata e dimensione. Puoi aprire istantaneamente qualsiasi lezione già memorizzata oppure cancellarla per liberare spazio sul disco.

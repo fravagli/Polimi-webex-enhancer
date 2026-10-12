@@ -410,12 +410,19 @@
         if (!video) return;
 
         try {
-            ensureSilenceAudio();
-            if (gainNode && audioCtx) {
-                if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
-                gainNode.gain.setValueAtTime(multiplier, audioCtx.currentTime);
+            if (window.__polimiAudioEnhancer) {
+                window.__polimiAudioEnhancer.attachVideo(video);
+                window.__polimiAudioEnhancer.setVolumeBoost(multiplier);
                 showHUD(`🔊 Boost Audio: ${Math.round(multiplier * 100)}%`, "🔊");
                 updateNativeBoostButton();
+            } else {
+                ensureSilenceAudio();
+                if (gainNode && audioCtx) {
+                    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+                    gainNode.gain.setValueAtTime(multiplier, audioCtx.currentTime);
+                    showHUD(`🔊 Boost Audio: ${Math.round(multiplier * 100)}%`, "🔊");
+                    updateNativeBoostButton();
+                }
             }
         } catch (e) {
             console.warn("[PoliMiEnhancer] Web Audio boost warning:", e);
@@ -820,6 +827,23 @@
     function ensureSilenceAudio() {
         const video = getPrimaryVideo();
         if (!video) return null;
+        if (window.__polimiAudioEnhancer) {
+            window.__polimiAudioEnhancer.attachVideo(video);
+            if (currentVolumeBoost > 1.0 || isSilenceSkipActive || window.__polimiAudioEnhancer.isAnyFilterActive()) {
+                if (!window.__polimiAudioEnhancer.isInitialized) {
+                    window.__polimiAudioEnhancer.initPipeline();
+                }
+            }
+            audioCtx = window.__polimiAudioEnhancer.audioCtx;
+            audioSource = window.__polimiAudioEnhancer.sourceNode;
+            gainNode = window.__polimiAudioEnhancer.gainNode;
+            const sa = window.__polimiAudioEnhancer.getSilenceAnalyser();
+            if (sa && sa.analyser) {
+                silenceAnalyser = sa.analyser;
+                silenceDataArray = sa.dataArray;
+            }
+            return { audioCtx, audioSource, silenceAnalyser, silenceDataArray };
+        }
         // Do not intercept or hijack video audio if user does not need volume boost (>100%) or silence skipping
         if (currentVolumeBoost <= 1.0 && !isSilenceSkipActive) {
             return null;
@@ -4446,6 +4470,329 @@ if (window.WebexOfflineDB) {
         handleQABarFullscreenActivity();
     });
 
+    // ==========================================
+    // AUDIO DENOISE & DSP FILTERS MODAL (ONLINE)
+    // ==========================================
+    function ensureWebexDenoiseModal() {
+        let overlay = document.getElementById("webex-denoise-overlay");
+        if (overlay) return overlay;
+
+        overlay = document.createElement("div");
+        overlay.className = "webex-denoise-overlay";
+        overlay.id = "webex-denoise-overlay";
+        overlay.style.display = "none";
+        overlay.innerHTML = `
+            <div class="webex-denoise-modal" id="webex-denoise-modal">
+                <!-- Header -->
+                <div class="webex-denoise-header">
+                    <div class="webex-denoise-title-box">
+                        <span class="webex-denoise-icon">🎙️</span>
+                        <div>
+                            <h3 class="webex-denoise-title">Pulizia Audio & Rimozione Rumore</h3>
+                            <p class="webex-denoise-subtitle">Filtri DSP in tempo reale e soppressione neurale RNNoise (WASM)</p>
+                        </div>
+                    </div>
+                    <div class="webex-denoise-header-actions">
+                        <span class="webex-denoise-status-badge" id="webex-denoise-status">⚪ Disattivato</span>
+                        <button type="button" class="webex-denoise-close-btn" id="webex-denoise-close" title="Chiudi (Esc)">✕</button>
+                    </div>
+                </div>
+
+                <!-- Presets Row -->
+                <div class="webex-denoise-presets-box">
+                    <span class="webex-denoise-presets-label">Preset Rapidi:</span>
+                    <div class="webex-denoise-presets-chips">
+                        <button type="button" class="webex-denoise-chip" data-preset="clear_voice" title="RNNoise + Anti-Ronzio 95Hz + De-Hiss 8.5kHz">⚡ Voce Chiara (Consigliato)</button>
+                        <button type="button" class="webex-denoise-chip" data-preset="noisy_room" title="RNNoise + Anti-Ronzio 120Hz + Noise Gate attivo">💨 Aula Rumorosa / Ventole</button>
+                        <button type="button" class="webex-denoise-chip" data-preset="light_filters" title="Solo filtri passa-alto e passa-basso senza AI">🧼 Solo Filtri</button>
+                        <button type="button" class="webex-denoise-chip reset" data-preset="reset" title="Disattiva tutti i filtri">🔄 Originale</button>
+                    </div>
+                </div>
+
+                <!-- Sections Body -->
+                <div class="webex-denoise-body">
+                    <!-- 1. RNNoise AI -->
+                    <div class="webex-denoise-card" id="webex-card-rnnoise">
+                        <div class="webex-denoise-card-header">
+                            <div class="webex-denoise-card-info">
+                                <div class="webex-denoise-card-title">
+                                    <span>🧠 Soppressione Rumore Neurale (RNNoise AI)</span>
+                                    <span class="webex-denoise-pill">Rete Neurale 48kHz</span>
+                                </div>
+                                <p class="webex-denoise-card-desc">Isola la voce del docente rimuovendo fruscii continui, rimbombi d'aula e ventole del proiettore.</p>
+                            </div>
+                            <label class="webex-denoise-switch">
+                                <input type="checkbox" id="webex-denoise-rnnoise-toggle">
+                                <span class="webex-denoise-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 2. High-Pass Filter (Anti-Ronzio) -->
+                    <div class="webex-denoise-card" id="webex-card-highpass">
+                        <div class="webex-denoise-card-header">
+                            <div class="webex-denoise-card-info">
+                                <div class="webex-denoise-card-title">
+                                    <span>⚡ Filtro Anti-Ronzio (High-Pass)</span>
+                                </div>
+                                <p class="webex-denoise-card-desc">Taglia i ronzii elettrici dell'impianto audio (50/60 Hz), colpi sulla cattedra e rombi a bassa frequenza.</p>
+                            </div>
+                            <label class="webex-denoise-switch">
+                                <input type="checkbox" id="webex-denoise-highpass-toggle">
+                                <span class="webex-denoise-slider"></span>
+                            </label>
+                        </div>
+                        <div class="webex-denoise-slider-box" id="webex-box-highpass-slider">
+                            <div class="webex-denoise-slider-meta">
+                                <span>Taglio basse frequenze:</span>
+                                <b id="webex-val-highpass-freq">90 Hz</b>
+                            </div>
+                            <input type="range" class="webex-denoise-range" id="webex-slider-highpass-freq" min="30" max="250" step="5" value="90">
+                        </div>
+                    </div>
+
+                    <!-- 3. Low-Pass Filter (De-Hiss) -->
+                    <div class="webex-denoise-card" id="webex-card-lowpass">
+                        <div class="webex-denoise-card-header">
+                            <div class="webex-denoise-card-info">
+                                <div class="webex-denoise-card-title">
+                                    <span>🔇 Filtro Anti-Fruscio (De-Hiss / Low-Pass)</span>
+                                </div>
+                                <p class="webex-denoise-card-desc">Attenua sibili metallici acuti, fruscii bianchi e rumore del preamplificatore del microfono.</p>
+                            </div>
+                            <label class="webex-denoise-switch">
+                                <input type="checkbox" id="webex-denoise-lowpass-toggle">
+                                <span class="webex-denoise-slider"></span>
+                            </label>
+                        </div>
+                        <div class="webex-denoise-slider-box" id="webex-box-lowpass-slider">
+                            <div class="webex-denoise-slider-meta">
+                                <span>Taglio alte frequenze:</span>
+                                <b id="webex-val-lowpass-freq">8000 Hz</b>
+                            </div>
+                            <input type="range" class="webex-denoise-range" id="webex-slider-lowpass-freq" min="4000" max="14000" step="250" value="8000">
+                        </div>
+                    </div>
+
+                    <!-- 4. Noise Gate (Silenziatore Pause) -->
+                    <div class="webex-denoise-card" id="webex-card-gate">
+                        <div class="webex-denoise-card-header">
+                            <div class="webex-denoise-card-info">
+                                <div class="webex-denoise-card-title">
+                                    <span>🤫 Noise Gate (Silenziamento Pause)</span>
+                                </div>
+                                <p class="webex-denoise-card-desc">Azzera il rumore residuo dell'aula nei secondi in cui il professore non parla.</p>
+                            </div>
+                            <label class="webex-denoise-switch">
+                                <input type="checkbox" id="webex-denoise-gate-toggle">
+                                <span class="webex-denoise-slider"></span>
+                            </label>
+                        </div>
+                        <div class="webex-denoise-slider-box" id="webex-box-gate-slider">
+                            <div class="webex-denoise-slider-meta">
+                                <span>Soglia di attivazione:</span>
+                                <b id="webex-val-gate-thresh">-45 dB</b>
+                            </div>
+                            <input type="range" class="webex-denoise-range" id="webex-slider-gate-thresh" min="-65" max="-25" step="1" value="-45">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    function initWebexDenoiseUI() {
+        const overlay = ensureWebexDenoiseModal();
+        if (!overlay) return;
+
+        const closeBtn = document.getElementById("webex-denoise-close");
+        const statusBadge = document.getElementById("webex-denoise-status");
+        const qaBtn = document.getElementById("webex-qa-denoise");
+        const actionBtn = document.getElementById("webex-action-denoise");
+
+        function openModal() {
+            const vid = getPrimaryVideo();
+            if (window.__polimiAudioEnhancer && vid) {
+                window.__polimiAudioEnhancer.attachVideo(vid);
+            }
+            overlay.style.display = "flex";
+        }
+
+        function closeModal() {
+            overlay.style.display = "none";
+        }
+
+        function toggleModal() {
+            if (overlay.style.display === "none" || !overlay.style.display) {
+                openModal();
+            } else {
+                closeModal();
+            }
+        }
+
+        if (qaBtn) qaBtn.onclick = (e) => { e.stopPropagation(); toggleModal(); };
+        if (actionBtn) actionBtn.onclick = (e) => { e.stopPropagation(); toggleModal(); };
+        if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
+
+        overlay.onclick = (e) => {
+            if (e.target === overlay) closeModal();
+        };
+
+        const rnnoiseToggle = document.getElementById("webex-denoise-rnnoise-toggle");
+        const hpToggle = document.getElementById("webex-denoise-highpass-toggle");
+        const hpSlider = document.getElementById("webex-slider-highpass-freq");
+        const hpVal = document.getElementById("webex-val-highpass-freq");
+        const lpToggle = document.getElementById("webex-denoise-lowpass-toggle");
+        const lpSlider = document.getElementById("webex-slider-lowpass-freq");
+        const lpVal = document.getElementById("webex-val-lowpass-freq");
+        const gateToggle = document.getElementById("webex-denoise-gate-toggle");
+        const gateSlider = document.getElementById("webex-slider-gate-thresh");
+        const gateVal = document.getElementById("webex-val-gate-thresh");
+
+        const cardRnnoise = document.getElementById("webex-card-rnnoise");
+        const cardHp = document.getElementById("webex-card-highpass");
+        const cardLp = document.getElementById("webex-card-lowpass");
+        const cardGate = document.getElementById("webex-card-gate");
+
+        const chipBtns = overlay.querySelectorAll(".webex-denoise-chip");
+
+        if (rnnoiseToggle) {
+            rnnoiseToggle.onchange = (e) => {
+                const vid = getPrimaryVideo();
+                if (window.__polimiAudioEnhancer) {
+                    if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
+                    window.__polimiAudioEnhancer.setRNNoise(e.target.checked);
+                }
+            };
+        }
+
+        if (hpToggle) {
+            hpToggle.onchange = (e) => {
+                const vid = getPrimaryVideo();
+                if (window.__polimiAudioEnhancer) {
+                    if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
+                    const freq = hpSlider ? parseFloat(hpSlider.value) : 90;
+                    window.__polimiAudioEnhancer.setHighPass(e.target.checked, freq);
+                }
+            };
+        }
+
+        if (hpSlider) {
+            hpSlider.oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                if (hpVal) hpVal.innerText = `${val} Hz`;
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.setHighPass(hpToggle ? hpToggle.checked : true, val);
+                }
+            };
+        }
+
+        if (lpToggle) {
+            lpToggle.onchange = (e) => {
+                const vid = getPrimaryVideo();
+                if (window.__polimiAudioEnhancer) {
+                    if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
+                    const freq = lpSlider ? parseFloat(lpSlider.value) : 8000;
+                    window.__polimiAudioEnhancer.setLowPass(e.target.checked, freq);
+                }
+            };
+        }
+
+        if (lpSlider) {
+            lpSlider.oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                if (lpVal) lpVal.innerText = `${val} Hz`;
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.setLowPass(lpToggle ? lpToggle.checked : true, val);
+                }
+            };
+        }
+
+        if (gateToggle) {
+            gateToggle.onchange = (e) => {
+                const vid = getPrimaryVideo();
+                if (window.__polimiAudioEnhancer) {
+                    if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
+                    const thresh = gateSlider ? parseFloat(gateSlider.value) : -45;
+                    window.__polimiAudioEnhancer.setNoiseGate(e.target.checked, thresh);
+                }
+            };
+        }
+
+        if (gateSlider) {
+            gateSlider.oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                if (gateVal) gateVal.innerText = `${val} dB`;
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.setNoiseGate(gateToggle ? gateToggle.checked : true, val);
+                }
+            };
+        }
+
+        chipBtns.forEach(chip => {
+            chip.onclick = (e) => {
+                e.stopPropagation();
+                const preset = chip.dataset.preset;
+                const vid = getPrimaryVideo();
+                if (window.__polimiAudioEnhancer && preset) {
+                    if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
+                    window.__polimiAudioEnhancer.applyPreset(preset);
+                }
+            };
+        });
+
+        function updateUI(settings) {
+            if (!settings) return;
+            if (rnnoiseToggle) rnnoiseToggle.checked = !!settings.rnnoiseEnabled;
+            if (hpToggle) hpToggle.checked = !!settings.highpassEnabled;
+            if (hpSlider) hpSlider.value = settings.highpassFreq || 90;
+            if (hpVal) hpVal.innerText = `${settings.highpassFreq || 90} Hz`;
+            if (lpToggle) lpToggle.checked = !!settings.lowpassEnabled;
+            if (lpSlider) lpSlider.value = settings.lowpassFreq || 8000;
+            if (lpVal) lpVal.innerText = `${settings.lowpassFreq || 8000} Hz`;
+            if (gateToggle) gateToggle.checked = !!settings.noiseGateEnabled;
+            if (gateSlider) gateSlider.value = settings.noiseGateThreshold || -45;
+            if (gateVal) gateVal.innerText = `${settings.noiseGateThreshold || -45} dB`;
+
+            if (cardRnnoise) cardRnnoise.classList.toggle("is-active", !!settings.rnnoiseEnabled);
+            if (cardHp) cardHp.classList.toggle("is-active", !!settings.highpassEnabled);
+            if (cardLp) cardLp.classList.toggle("is-active", !!settings.lowpassEnabled);
+            if (cardGate) cardGate.classList.toggle("is-active", !!settings.noiseGateEnabled);
+
+            chipBtns.forEach(c => {
+                c.classList.toggle("active", c.dataset.preset === settings.preset);
+            });
+
+            const isAnyActive = window.__polimiAudioEnhancer ? window.__polimiAudioEnhancer.isAnyFilterActive() : false;
+            if (statusBadge) {
+                if (settings.rnnoiseEnabled) {
+                    statusBadge.innerText = "🟢 Attivo (RNNoise AI)";
+                    statusBadge.style.color = "#4ade80";
+                    statusBadge.style.borderColor = "rgba(74, 222, 128, 0.4)";
+                } else if (isAnyActive) {
+                    statusBadge.innerText = "🔵 Attivo (Filtri DSP)";
+                    statusBadge.style.color = "#38bdf8";
+                    statusBadge.style.borderColor = "rgba(56, 189, 248, 0.4)";
+                } else {
+                    statusBadge.innerText = "⚪ Disattivato";
+                    statusBadge.style.color = "rgba(255, 255, 255, 0.6)";
+                    statusBadge.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                }
+            }
+
+            const currentQaBtn = document.getElementById("webex-qa-denoise");
+            const currentActionBtn = document.getElementById("webex-action-denoise");
+            if (currentQaBtn) currentQaBtn.classList.toggle("active", isAnyActive);
+            if (currentActionBtn) currentActionBtn.classList.toggle("active", isAnyActive);
+        }
+
+        if (window.__polimiAudioEnhancer) {
+            window.__polimiAudioEnhancer.subscribe(updateUI);
+        }
+    }
+
     // --- Create Docked Master Liquid Glass Toolbar ---
     function createToolbar() {
         if (document.getElementById("webex-helper-toolbar-container")) return;
@@ -4528,6 +4875,9 @@ if (window.WebexOfflineDB) {
                         </div>
                     </div>
                 </div>
+
+                <!-- 8b. Filtri Audio & Rimozione Rumore AI (RNNoise) -->
+                <div class="webex-floating-box webex-qa-icon-btn" id="webex-qa-denoise" title="Filtri Audio & Rimozione Rumore AI (RNNoise)">🎙️</div>
 
                 <!-- 9. Trascrizione -->
                 <div class="webex-floating-box webex-qa-icon-btn" id="webex-qa-subtitles" title="Trascrizione e Sottotitoli (T)">💬</div>
@@ -4759,6 +5109,11 @@ if (window.WebexOfflineDB) {
                             <button class="webex-helper-action-btn webex-btn-standard" id="webex-action-subtitles" title="Trascrizione e Sottotitoli (T)">
                                 <span class="icon">💬</span>
                                 <span id="webex-action-subtitles-lbl">Trascrizione</span>
+                            </button>
+                            <!-- Filtri Audio & Rimozione Rumore AI (RNNoise) -->
+                            <button class="webex-helper-action-btn webex-btn-standard" id="webex-action-denoise" title="Filtri Audio & Rimozione Rumore AI (RNNoise)">
+                                <span class="icon">🎙️</span>
+                                <span id="webex-action-denoise-lbl">Filtri Audio</span>
                             </button>
                         </div>
                     </div>
@@ -5447,6 +5802,7 @@ if (window.WebexOfflineDB) {
         updateActionButtonsState();
         updateBookmarkFlyout();
         renderTimelineMarkers();
+        initWebexDenoiseUI();
 
         const curVid = getPrimaryVideo();
         if (curVid) {
@@ -5503,6 +5859,14 @@ if (window.WebexOfflineDB) {
         if (openModal) {
             if (event.key === "Escape") {
                 openModal.remove();
+            }
+            return;
+        }
+
+        const openDenoise = document.getElementById("webex-denoise-overlay");
+        if (openDenoise && openDenoise.style.display !== "none") {
+            if (event.key === "Escape") {
+                openDenoise.style.display = "none";
             }
             return;
         }

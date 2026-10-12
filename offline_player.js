@@ -170,9 +170,19 @@ async function initOfflinePlayer() {
     });
 
     // ==========================================
-    // AUDIO BOOST (GAIN NODE)
+    // AUDIO BOOST (GAIN NODE) & PIPELINE
     // ==========================================
     function initAudioContext() {
+        if (window.__polimiAudioEnhancer && video) {
+            window.__polimiAudioEnhancer.attachVideo(video);
+            if (!window.__polimiAudioEnhancer.isInitialized) {
+                window.__polimiAudioEnhancer.initPipeline();
+            }
+            audioCtx = window.__polimiAudioEnhancer.audioCtx;
+            gainNode = window.__polimiAudioEnhancer.gainNode;
+            audioSourceNode = window.__polimiAudioEnhancer.sourceNode;
+            return;
+        }
         if (audioCtx) {
             if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
             return;
@@ -194,17 +204,24 @@ async function initOfflinePlayer() {
 
     function setAudioBoost(mult) {
         audioBoostMultiplier = Math.max(1.0, Math.min(3.0, mult));
-        if (audioBoostMultiplier > 1.0) {
-            initAudioContext();
-            if (gainNode && audioCtx) {
-                if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
-                gainNode.gain.value = audioBoostMultiplier;
+        if (window.__polimiAudioEnhancer && video) {
+            window.__polimiAudioEnhancer.attachVideo(video);
+            window.__polimiAudioEnhancer.setVolumeBoost(audioBoostMultiplier);
+        } else {
+            if (audioBoostMultiplier > 1.0) {
+                initAudioContext();
+                if (gainNode && audioCtx) {
+                    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+                    gainNode.gain.value = audioBoostMultiplier;
+                }
+            } else if (gainNode) {
+                gainNode.gain.value = 1.0;
             }
-        } else if (gainNode) {
-            gainNode.gain.value = 1.0;
         }
         const boostVal = document.getElementById("offline-vol-boost-val");
         if (boostVal) boostVal.innerText = `${Math.round(audioBoostMultiplier * 100)}%`;
+        const qaBoostVal = document.getElementById("offline-qa-boost-val");
+        if (qaBoostVal) qaBoostVal.innerText = `${Math.round(audioBoostMultiplier * 100)}%`;
         if (audioBoostMultiplier > 1.0) {
             showHUD(`Volume Boost: ${Math.round(audioBoostMultiplier * 100)}%`, "🔊");
         }
@@ -703,6 +720,194 @@ async function initOfflinePlayer() {
             showHUD(isOfflineCCOverlayEnabled ? "Sottotitoli a schermo: Attivi" : "Sottotitoli a schermo: Disattivati", "💬");
         };
     }
+
+    // ==========================================
+    // AUDIO DENOISE & DSP FILTERS MODAL (OFFLINE)
+    // ==========================================
+    function initOfflineDenoiseUI() {
+        const overlay = document.getElementById("offline-denoise-overlay");
+        const closeBtn = document.getElementById("offline-denoise-close");
+        const statusBadge = document.getElementById("offline-denoise-status");
+        const qaBtn = document.getElementById("offline-qa-denoise");
+        const actionBtn = document.getElementById("offline-action-denoise");
+
+        if (!overlay) return;
+
+        function openModal() {
+            if (window.__polimiAudioEnhancer && video) {
+                window.__polimiAudioEnhancer.attachVideo(video);
+            }
+            overlay.style.display = "flex";
+        }
+
+        function closeModal() {
+            overlay.style.display = "none";
+        }
+
+        function toggleModal() {
+            if (overlay.style.display === "none" || !overlay.style.display) {
+                openModal();
+            } else {
+                closeModal();
+            }
+        }
+
+        if (qaBtn) qaBtn.onclick = (e) => { e.stopPropagation(); toggleModal(); };
+        if (actionBtn) actionBtn.onclick = (e) => { e.stopPropagation(); toggleModal(); };
+        if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
+
+        overlay.onclick = (e) => {
+            if (e.target === overlay) closeModal();
+        };
+
+        const rnnoiseToggle = document.getElementById("offline-denoise-rnnoise-toggle");
+        const hpToggle = document.getElementById("offline-denoise-highpass-toggle");
+        const hpSlider = document.getElementById("offline-slider-highpass-freq");
+        const hpVal = document.getElementById("offline-val-highpass-freq");
+        const lpToggle = document.getElementById("offline-denoise-lowpass-toggle");
+        const lpSlider = document.getElementById("offline-slider-lowpass-freq");
+        const lpVal = document.getElementById("offline-val-lowpass-freq");
+        const gateToggle = document.getElementById("offline-denoise-gate-toggle");
+        const gateSlider = document.getElementById("offline-slider-gate-thresh");
+        const gateVal = document.getElementById("offline-val-gate-thresh");
+
+        const cardRnnoise = document.getElementById("offline-card-rnnoise");
+        const cardHp = document.getElementById("offline-card-highpass");
+        const cardLp = document.getElementById("offline-card-lowpass");
+        const cardGate = document.getElementById("offline-card-gate");
+
+        const chipBtns = overlay.querySelectorAll(".webex-denoise-chip");
+
+        // UI Event Listeners
+        if (rnnoiseToggle) {
+            rnnoiseToggle.onchange = (e) => {
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.attachVideo(video);
+                    window.__polimiAudioEnhancer.setRNNoise(e.target.checked);
+                }
+            };
+        }
+
+        if (hpToggle) {
+            hpToggle.onchange = (e) => {
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.attachVideo(video);
+                    const freq = hpSlider ? parseFloat(hpSlider.value) : 90;
+                    window.__polimiAudioEnhancer.setHighPass(e.target.checked, freq);
+                }
+            };
+        }
+
+        if (hpSlider) {
+            hpSlider.oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                if (hpVal) hpVal.innerText = `${val} Hz`;
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.setHighPass(hpToggle ? hpToggle.checked : true, val);
+                }
+            };
+        }
+
+        if (lpToggle) {
+            lpToggle.onchange = (e) => {
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.attachVideo(video);
+                    const freq = lpSlider ? parseFloat(lpSlider.value) : 8000;
+                    window.__polimiAudioEnhancer.setLowPass(e.target.checked, freq);
+                }
+            };
+        }
+
+        if (lpSlider) {
+            lpSlider.oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                if (lpVal) lpVal.innerText = `${val} Hz`;
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.setLowPass(lpToggle ? lpToggle.checked : true, val);
+                }
+            };
+        }
+
+        if (gateToggle) {
+            gateToggle.onchange = (e) => {
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.attachVideo(video);
+                    const thresh = gateSlider ? parseFloat(gateSlider.value) : -45;
+                    window.__polimiAudioEnhancer.setNoiseGate(e.target.checked, thresh);
+                }
+            };
+        }
+
+        if (gateSlider) {
+            gateSlider.oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                if (gateVal) gateVal.innerText = `${val} dB`;
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.setNoiseGate(gateToggle ? gateToggle.checked : true, val);
+                }
+            };
+        }
+
+        chipBtns.forEach(chip => {
+            chip.onclick = (e) => {
+                e.stopPropagation();
+                const preset = chip.dataset.preset;
+                if (window.__polimiAudioEnhancer && preset) {
+                    window.__polimiAudioEnhancer.attachVideo(video);
+                    window.__polimiAudioEnhancer.applyPreset(preset);
+                }
+            };
+        });
+
+        // Sync state from engine
+        function updateUI(settings) {
+            if (!settings) return;
+            if (rnnoiseToggle) rnnoiseToggle.checked = !!settings.rnnoiseEnabled;
+            if (hpToggle) hpToggle.checked = !!settings.highpassEnabled;
+            if (hpSlider) hpSlider.value = settings.highpassFreq || 90;
+            if (hpVal) hpVal.innerText = `${settings.highpassFreq || 90} Hz`;
+            if (lpToggle) lpToggle.checked = !!settings.lowpassEnabled;
+            if (lpSlider) lpSlider.value = settings.lowpassFreq || 8000;
+            if (lpVal) lpVal.innerText = `${settings.lowpassFreq || 8000} Hz`;
+            if (gateToggle) gateToggle.checked = !!settings.noiseGateEnabled;
+            if (gateSlider) gateSlider.value = settings.noiseGateThreshold || -45;
+            if (gateVal) gateVal.innerText = `${settings.noiseGateThreshold || -45} dB`;
+
+            if (cardRnnoise) cardRnnoise.classList.toggle("is-active", !!settings.rnnoiseEnabled);
+            if (cardHp) cardHp.classList.toggle("is-active", !!settings.highpassEnabled);
+            if (cardLp) cardLp.classList.toggle("is-active", !!settings.lowpassEnabled);
+            if (cardGate) cardGate.classList.toggle("is-active", !!settings.noiseGateEnabled);
+
+            chipBtns.forEach(c => {
+                c.classList.toggle("active", c.dataset.preset === settings.preset);
+            });
+
+            const isAnyActive = window.__polimiAudioEnhancer ? window.__polimiAudioEnhancer.isAnyFilterActive() : false;
+            if (statusBadge) {
+                if (settings.rnnoiseEnabled) {
+                    statusBadge.innerText = "🟢 Attivo (RNNoise AI)";
+                    statusBadge.style.color = "#4ade80";
+                    statusBadge.style.borderColor = "rgba(74, 222, 128, 0.4)";
+                } else if (isAnyActive) {
+                    statusBadge.innerText = "🔵 Attivo (Filtri DSP)";
+                    statusBadge.style.color = "#38bdf8";
+                    statusBadge.style.borderColor = "rgba(56, 189, 248, 0.4)";
+                } else {
+                    statusBadge.innerText = "⚪ Disattivato";
+                    statusBadge.style.color = "rgba(255, 255, 255, 0.6)";
+                    statusBadge.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                }
+            }
+
+            if (qaBtn) qaBtn.classList.toggle("active", isAnyActive);
+            if (actionBtn) actionBtn.classList.toggle("active", isAnyActive);
+        }
+
+        if (window.__polimiAudioEnhancer) {
+            window.__polimiAudioEnhancer.subscribe(updateUI);
+        }
+    }
+    initOfflineDenoiseUI();
 
     // Draggable toolbar header
     const panelHeader = toolbarContainer ? toolbarContainer.querySelector(".webex-helper-panel-header") : null;
@@ -1549,6 +1754,18 @@ async function initOfflinePlayer() {
     function initSilenceAudio() {
         if (!video) return;
         try {
+            if (window.__polimiAudioEnhancer) {
+                window.__polimiAudioEnhancer.attachVideo(video);
+                const sa = window.__polimiAudioEnhancer.getSilenceAnalyser();
+                if (sa && sa.analyser) {
+                    silenceAnalyser = sa.analyser;
+                    silenceDataArray = sa.dataArray;
+                    if (window.__polimiAudioEnhancer.audioCtx && window.__polimiAudioEnhancer.audioCtx.state === "suspended") {
+                        window.__polimiAudioEnhancer.audioCtx.resume().catch(() => {});
+                    }
+                    return;
+                }
+            }
             initAudioContext();
             if (!audioCtx) return;
             if (audioCtx.state === "suspended") {
@@ -4099,6 +4316,14 @@ async function initOfflinePlayer() {
         const openModal = document.querySelector(".webex-helper-modal-overlay");
         if (openModal) {
             if (e.key === "Escape") openModal.remove();
+            return;
+        }
+
+        const openDenoise = document.getElementById("offline-denoise-overlay");
+        if (openDenoise && openDenoise.style.display !== "none") {
+            if (e.key === "Escape") {
+                openDenoise.style.display = "none";
+            }
             return;
         }
 
