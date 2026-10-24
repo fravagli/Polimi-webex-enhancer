@@ -830,6 +830,17 @@ function uint8ArrayToBase64(u8) {
 
 // Stream large lecture video blobs in safe 4MB Base64 chunks over a runtime Port
 chrome.runtime.onConnect.addListener((port) => {
+    let isPortDisconnected = false;
+    port.onDisconnect.addListener(() => {
+        isPortDisconnected = true;
+    });
+
+    const safePostMessage = (msg) => {
+        if (!isPortDisconnected) {
+            try { port.postMessage(msg); } catch (_) { isPortDisconnected = true; }
+        }
+    };
+
     if (port.name === "GET_LECTURE_BLOB_STREAM") {
         port.onMessage.addListener(async (req) => {
             if (req.type === "REQUEST_BLOB") {
@@ -876,6 +887,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
                     let offset = 0;
                     while (offset < totalBytes) {
+                        if (isPortDisconnected) break;
                         const slice = blob.slice(offset, Math.min(totalBytes, offset + CHUNK_SIZE));
                         const ab = await slice.arrayBuffer();
                         const b64 = uint8ArrayToBase64(new Uint8Array(ab));
@@ -934,6 +946,7 @@ chrome.runtime.onConnect.addListener((port) => {
                     let totalTransferred = 0;
 
                     while (true) {
+                        if (isPortDisconnected) break;
                         const { done, value } = await reader.read();
                         if (done) {
                             if (bufferedLength > 0) {

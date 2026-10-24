@@ -333,7 +333,7 @@ const AITranscriber = (function () {
                     directSuccess = true;
                 }
             } catch (directErr) {
-                console.warn("[AITranscriber] Direct fetch blocked (likely CSP/CORS), trying background proxy:", directErr);
+                console.debug("[AITranscriber] Direct fetch blocked (likely CSP/CORS), trying background proxy:", directErr);
             }
 
             // Fallback: Background service worker download (100% immune to Webex CSP and CORS!)

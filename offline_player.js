@@ -725,27 +725,32 @@ async function initOfflinePlayer() {
     // AUDIO DENOISE & DSP FILTERS MODAL (OFFLINE)
     // ==========================================
     function initOfflineDenoiseUI() {
-        const overlay = document.getElementById("offline-denoise-overlay");
+        const panel = document.getElementById("offline-denoise-panel");
         const closeBtn = document.getElementById("offline-denoise-close");
-        const statusBadge = document.getElementById("offline-denoise-status");
+        const masterToggle = document.getElementById("offline-denoise-master-toggle");
+        const masterWrap = document.getElementById("offline-denoise-master-wrap");
+        const masterLbl = document.getElementById("offline-denoise-master-lbl");
+        const dspMasterToggle = document.getElementById("offline-denoise-dsp-master-toggle");
+
         const qaBtn = document.getElementById("offline-qa-denoise");
         const actionBtn = document.getElementById("offline-action-denoise");
 
-        if (!overlay) return;
+        if (!panel) return;
 
         function openModal() {
             if (window.__polimiAudioEnhancer && video) {
                 window.__polimiAudioEnhancer.attachVideo(video);
             }
-            overlay.classList.add("is-open");
+            panel.style.setProperty("z-index", "2147483647", "important");
+            panel.classList.add("is-open");
         }
 
         function closeModal() {
-            overlay.classList.remove("is-open");
+            panel.classList.remove("is-open");
         }
 
         function toggleModal() {
-            if (overlay.classList.contains("is-open")) {
+            if (panel.classList.contains("is-open")) {
                 closeModal();
             } else {
                 openModal();
@@ -756,9 +761,55 @@ async function initOfflinePlayer() {
         if (actionBtn) actionBtn.onclick = (e) => { e.stopPropagation(); toggleModal(); };
         if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
 
-        overlay.onclick = (e) => {
-            if (e.target === overlay) closeModal();
-        };
+        // Always bring panel to top when clicked
+        panel.addEventListener("mousedown", () => {
+            panel.style.setProperty("z-index", "2147483647", "important");
+        });
+
+        // Draggable Header logic - Unrestricted movement in all 4 directions
+        const header = panel.querySelector("#offline-denoise-header");
+        let isDragging = false;
+        let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+        if (header) {
+            header.addEventListener("mousedown", (e) => {
+                if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input")) return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                const rect = panel.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+                panel.style.setProperty("z-index", "2147483647", "important");
+                e.preventDefault();
+            });
+
+            window.addEventListener("mousemove", (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const margin = 8;
+                const maxLeft = Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
+                const maxTop = Math.max(margin, window.innerHeight - panel.offsetHeight - margin);
+                const newLeft = Math.min(maxLeft, Math.max(margin, initialLeft + dx));
+                const newTop = Math.min(maxTop, Math.max(margin, initialTop + dy));
+                panel.style.setProperty("left", `${newLeft}px`, "important");
+                panel.style.setProperty("top", `${newTop}px`, "important");
+                panel.style.setProperty("right", "auto", "important");
+                panel.style.setProperty("bottom", "auto", "important");
+            });
+
+            window.addEventListener("mouseup", () => {
+                isDragging = false;
+            });
+        }
+
+        // Close on Escape key
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && panel.classList.contains("is-open")) {
+                closeModal();
+            }
+        });
 
         const rnnoiseToggle = document.getElementById("offline-denoise-rnnoise-toggle");
         const hpToggle = document.getElementById("offline-denoise-highpass-toggle");
@@ -772,13 +823,32 @@ async function initOfflinePlayer() {
         const gateVal = document.getElementById("offline-val-gate-thresh");
 
         const cardRnnoise = document.getElementById("offline-card-rnnoise");
+        const cardDsp = document.getElementById("offline-card-dsp");
         const cardHp = document.getElementById("offline-card-highpass");
         const cardLp = document.getElementById("offline-card-lowpass");
         const cardGate = document.getElementById("offline-card-gate");
 
-        const chipBtns = overlay.querySelectorAll(".webex-denoise-chip");
+        const chipBtns = panel.querySelectorAll(".webex-denoise-chip");
 
         // UI Event Listeners
+        if (masterToggle) {
+            masterToggle.onchange = (e) => {
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.attachVideo(video);
+                    window.__polimiAudioEnhancer.setMasterEnabled(e.target.checked);
+                }
+            };
+        }
+
+        if (dspMasterToggle) {
+            dspMasterToggle.onchange = (e) => {
+                if (window.__polimiAudioEnhancer) {
+                    window.__polimiAudioEnhancer.attachVideo(video);
+                    window.__polimiAudioEnhancer.setDspMaster(e.target.checked);
+                }
+            };
+        }
+
         if (rnnoiseToggle) {
             rnnoiseToggle.onchange = (e) => {
                 if (window.__polimiAudioEnhancer) {
@@ -792,7 +862,7 @@ async function initOfflinePlayer() {
             hpToggle.onchange = (e) => {
                 if (window.__polimiAudioEnhancer) {
                     window.__polimiAudioEnhancer.attachVideo(video);
-                    const freq = hpSlider ? parseFloat(hpSlider.value) : 90;
+                    const freq = hpSlider ? parseFloat(hpSlider.value) : 140;
                     window.__polimiAudioEnhancer.setHighPass(e.target.checked, freq);
                 }
             };
@@ -812,7 +882,7 @@ async function initOfflinePlayer() {
             lpToggle.onchange = (e) => {
                 if (window.__polimiAudioEnhancer) {
                     window.__polimiAudioEnhancer.attachVideo(video);
-                    const freq = lpSlider ? parseFloat(lpSlider.value) : 8000;
+                    const freq = lpSlider ? parseFloat(lpSlider.value) : 4500;
                     window.__polimiAudioEnhancer.setLowPass(e.target.checked, freq);
                 }
             };
@@ -832,7 +902,7 @@ async function initOfflinePlayer() {
             gateToggle.onchange = (e) => {
                 if (window.__polimiAudioEnhancer) {
                     window.__polimiAudioEnhancer.attachVideo(video);
-                    const thresh = gateSlider ? parseFloat(gateSlider.value) : -45;
+                    const thresh = gateSlider ? parseFloat(gateSlider.value) : -42;
                     window.__polimiAudioEnhancer.setNoiseGate(e.target.checked, thresh);
                 }
             };
@@ -862,43 +932,57 @@ async function initOfflinePlayer() {
         // Sync state from engine
         function updateUI(settings) {
             if (!settings) return;
-            if (rnnoiseToggle) rnnoiseToggle.checked = !!settings.rnnoiseEnabled;
-            if (hpToggle) hpToggle.checked = !!settings.highpassEnabled;
-            if (hpSlider) hpSlider.value = settings.highpassFreq || 90;
-            if (hpVal) hpVal.innerText = `${settings.highpassFreq || 90} Hz`;
-            if (lpToggle) lpToggle.checked = !!settings.lowpassEnabled;
-            if (lpSlider) lpSlider.value = settings.lowpassFreq || 8000;
-            if (lpVal) lpVal.innerText = `${settings.lowpassFreq || 8000} Hz`;
-            if (gateToggle) gateToggle.checked = !!settings.noiseGateEnabled;
-            if (gateSlider) gateSlider.value = settings.noiseGateThreshold || -45;
-            if (gateVal) gateVal.innerText = `${settings.noiseGateThreshold || -45} dB`;
 
+            // Master state
+            const isMaster = !!settings.masterEnabled;
+            if (masterToggle) masterToggle.checked = isMaster;
+            if (masterWrap) masterWrap.classList.toggle("active", isMaster);
+            if (masterLbl) masterLbl.innerText = isMaster ? "ON" : "OFF";
+            panel.classList.toggle("is-master-off", !isMaster);
+
+            // DSP Master state
+            const isDspMaster = typeof settings.dspMasterEnabled !== "undefined" ? !!settings.dspMasterEnabled : true;
+            if (dspMasterToggle) dspMasterToggle.checked = isDspMaster;
+            if (cardDsp) cardDsp.classList.toggle("is-dsp-off", !isDspMaster);
+
+            // RNNoise AI
+            if (rnnoiseToggle) rnnoiseToggle.checked = !!settings.rnnoiseEnabled;
             if (cardRnnoise) cardRnnoise.classList.toggle("is-active", !!settings.rnnoiseEnabled);
+
+            // Sub DSP items
+            if (hpToggle) hpToggle.checked = !!settings.highpassEnabled;
+            if (hpSlider) hpSlider.value = settings.highpassFreq || 130;
+            if (hpVal) hpVal.innerText = `${settings.highpassFreq || 130} Hz`;
+
+            if (lpToggle) lpToggle.checked = !!settings.lowpassEnabled;
+            if (lpSlider) lpSlider.value = settings.lowpassFreq || 4800;
+            if (lpVal) lpVal.innerText = `${settings.lowpassFreq || 4800} Hz`;
+
+            if (gateToggle) gateToggle.checked = !!settings.noiseGateEnabled;
+            if (gateSlider) gateSlider.value = settings.noiseGateThreshold || -42;
+            if (gateVal) gateVal.innerText = `${settings.noiseGateThreshold || -42} dB`;
+
             if (cardHp) cardHp.classList.toggle("is-active", !!settings.highpassEnabled);
             if (cardLp) cardLp.classList.toggle("is-active", !!settings.lowpassEnabled);
             if (cardGate) cardGate.classList.toggle("is-active", !!settings.noiseGateEnabled);
 
+            // Preset chips active highlighting
             chipBtns.forEach(c => {
-                c.classList.toggle("active", c.dataset.preset === settings.preset);
+                c.classList.toggle("active", isMaster && c.dataset.preset === settings.preset);
             });
 
-            const isAnyActive = window.__polimiAudioEnhancer ? window.__polimiAudioEnhancer.isAnyFilterActive() : false;
-            if (statusBadge) {
-                if (settings.rnnoiseEnabled) {
-                    statusBadge.innerText = "🟢 Attivo (RNNoise AI)";
-                    statusBadge.style.color = "#4ade80";
-                    statusBadge.style.borderColor = "rgba(74, 222, 128, 0.4)";
-                } else if (isAnyActive) {
-                    statusBadge.innerText = "🔵 Attivo (Filtri DSP)";
-                    statusBadge.style.color = "#38bdf8";
-                    statusBadge.style.borderColor = "rgba(56, 189, 248, 0.4)";
-                } else {
-                    statusBadge.innerText = "⚪ Disattivato";
-                    statusBadge.style.color = "rgba(255, 255, 255, 0.6)";
-                    statusBadge.style.borderColor = "rgba(255, 255, 255, 0.15)";
-                }
-            }
-
+            const isAnyActive = window.__polimiAudioEnhancer ? (
+                typeof window.__polimiAudioEnhancer.hasActiveFilters === "function"
+                    ? window.__polimiAudioEnhancer.hasActiveFilters()
+                    : (window.__polimiAudioEnhancer.settings?.masterEnabled && (
+                        window.__polimiAudioEnhancer.settings?.rnnoiseEnabled || 
+                        (window.__polimiAudioEnhancer.settings?.dspMasterEnabled && (
+                            window.__polimiAudioEnhancer.settings?.highpassEnabled || 
+                            window.__polimiAudioEnhancer.settings?.lowpassEnabled || 
+                            window.__polimiAudioEnhancer.settings?.noiseGateEnabled
+                        ))
+                    ))
+            ) : false;
             if (qaBtn) qaBtn.classList.toggle("active", isAnyActive);
             if (actionBtn) actionBtn.classList.toggle("active", isAnyActive);
         }
@@ -1755,7 +1839,7 @@ async function initOfflinePlayer() {
         if (!video) return;
         try {
             if (window.__polimiAudioEnhancer) {
-                window.__polimiAudioEnhancer.attachVideo(video);
+                window.__polimiAudioEnhancer.attachVideo(video, true);
                 const sa = window.__polimiAudioEnhancer.getSilenceAnalyser();
                 if (sa && sa.analyser) {
                     silenceAnalyser = sa.analyser;
@@ -2853,32 +2937,233 @@ async function initOfflinePlayer() {
         offlineSubtitlesBtnDelete.onclick = () => deleteOfflineSubtitlesTrack();
     }
 
+    // ==========================================
+    // TRANSCRIPTION EXPORT ENGINE & LIQUID MODAL
+    // ==========================================
+    function formatTimeHMS(sec) {
+        const s = Math.max(0, Number(sec) || 0);
+        const h = Math.floor(s / 3600).toString().padStart(2, '0');
+        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const secPart = Math.floor(s % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${secPart}`;
+    }
+
+    function formatTimeSRT(sec) {
+        const s = Math.max(0, Number(sec) || 0);
+        const h = Math.floor(s / 3600).toString().padStart(2, '0');
+        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const secPart = Math.floor(s % 60).toString().padStart(2, '0');
+        const ms = Math.floor((s % 1) * 1000).toString().padStart(3, '0');
+        return `${h}:${m}:${secPart},${ms}`;
+    }
+
+    function generateExportData(cues, format, includeTimestamps, lineBreakMode, lectureTitle) {
+        if (!cues || cues.length === 0) return { content: "", mime: "text/plain", ext: "txt" };
+
+        if (format === "srt") {
+            let srt = "";
+            cues.forEach((c, idx) => {
+                const start = formatTimeSRT(c.start);
+                const end = formatTimeSRT(c.end || (c.start + 3));
+                srt += `${idx + 1}
+
+${start} --> ${end}
+
+${(c.text || "").trim()}
+
+
+
+`;
+            });
+            return { content: srt.trim(), mime: "text/plain;charset=utf-8", ext: "srt" };
+        }
+
+        if (format === "json") {
+            const payload = {
+                title: lectureTitle || "Trascrizione Lezione",
+                exportedAt: new Date().toISOString(),
+                totalSegments: cues.length,
+                segments: cues.map(c => {
+                    const seg = { text: (c.text || "").trim() };
+                    if (includeTimestamps) {
+                        seg.start = Number(c.start.toFixed(2));
+                        seg.end = Number((c.end || c.start).toFixed(2));
+                        seg.timestamp = formatTimeHMS(c.start);
+                    }
+                    return seg;
+                })
+            };
+            return { content: JSON.stringify(payload, null, 2), mime: "application/json;charset=utf-8", ext: "json" };
+        }
+
+        // Default: TXT
+        let txt = "";
+        if (lineBreakMode === "newline") {
+            cues.forEach(c => {
+                const timePrefix = includeTimestamps ? `[${formatTimeHMS(c.start)}] ` : "";
+                txt += timePrefix + (c.text || "").trim() + "\n";
+            });
+        } else {
+            const parts = [];
+            cues.forEach(c => {
+                const timePrefix = includeTimestamps ? `[${formatTimeHMS(c.start)}] ` : "";
+                const t = (c.text || "").trim();
+                if (t) parts.push(`${timePrefix}${t}`);
+            });
+            txt = parts.join(" ");
+        }
+        return { content: txt.trim(), mime: "text/plain;charset=utf-8", ext: "txt" };
+    }
+
+    let exportCurrentFormat = "txt";
+    let exportIncludeTimestamps = true;
+    let exportLineBreakMode = "newline";
+
+    function openOfflineExportModal() {
+        if (!offlineSubtitles || offlineSubtitles.length === 0) {
+            showHUD("Nessuna trascrizione da esportare", "⚠️");
+            return;
+        }
+
+        const modal = document.getElementById("offline-export-modal");
+        if (!modal) return;
+
+        const closeBtn = document.getElementById("offline-export-close");
+        const formatBtns = modal.querySelectorAll("#offline-export-format-group .webex-export-seg-btn");
+        const chkTimestamps = document.getElementById("offline-export-chk-timestamps");
+        const tsSection = document.getElementById("offline-export-ts-section");
+        const linesSection = document.getElementById("offline-export-lines-section");
+        const lineBtns = modal.querySelectorAll("#offline-export-lines-group .webex-export-seg-btn");
+        const previewBox = document.getElementById("offline-export-preview");
+        const extBadge = document.getElementById("offline-export-ext-badge");
+        const cueCountBadge = document.getElementById("offline-export-cue-count");
+        const btnDl = document.getElementById("offline-export-btn-download");
+        const btnCopy = document.getElementById("offline-export-btn-copy");
+        const copyLabel = document.getElementById("offline-export-copy-label");
+        const dlLabel = document.getElementById("offline-export-dl-label");
+
+        if (cueCountBadge) cueCountBadge.innerText = `${offlineSubtitles.length} frasi`;
+
+        function updateExportPreview() {
+            if (exportCurrentFormat === "srt") {
+                if (tsSection) tsSection.style.display = "none";
+                if (linesSection) linesSection.style.display = "none";
+            } else if (exportCurrentFormat === "json") {
+                if (tsSection) tsSection.style.display = "flex";
+                if (linesSection) linesSection.style.display = "none";
+            } else {
+                if (tsSection) tsSection.style.display = "flex";
+                if (linesSection) linesSection.style.display = "flex";
+            }
+
+            if (extBadge) extBadge.innerText = `.${exportCurrentFormat}`;
+            if (dlLabel) dlLabel.innerText = `Scarica File (.${exportCurrentFormat})`;
+
+            formatBtns.forEach(b => b.classList.toggle("active", b.dataset.format === exportCurrentFormat));
+            lineBtns.forEach(b => b.classList.toggle("active", b.dataset.lines === exportLineBreakMode));
+            if (chkTimestamps) chkTimestamps.checked = exportIncludeTimestamps;
+
+            const sampleCues = offlineSubtitles.slice(0, 5);
+            const generated = generateExportData(
+                sampleCues,
+                exportCurrentFormat,
+                exportIncludeTimestamps,
+                exportLineBreakMode,
+                currentLectureTitle || "Lezione"
+            );
+
+            if (previewBox) {
+                previewBox.innerText = generated.content + (offlineSubtitles.length > 5 ? "\n\n... (" + (offlineSubtitles.length - 5) + " altri segmenti)" : "");
+            }
+        }
+
+        formatBtns.forEach(btn => {
+            btn.onclick = () => {
+                exportCurrentFormat = btn.dataset.format;
+                updateExportPreview();
+            };
+        });
+
+        if (chkTimestamps) {
+            chkTimestamps.onchange = (e) => {
+                exportIncludeTimestamps = e.target.checked;
+                updateExportPreview();
+            };
+        }
+
+        lineBtns.forEach(btn => {
+            btn.onclick = () => {
+                exportLineBreakMode = btn.dataset.lines;
+                updateExportPreview();
+            };
+        });
+
+        if (btnDl) {
+            btnDl.onclick = () => {
+                const fullData = generateExportData(
+                    offlineSubtitles,
+                    exportCurrentFormat,
+                    exportIncludeTimestamps,
+                    exportLineBreakMode,
+                    currentLectureTitle || "Lezione"
+                );
+                const blob = new Blob([fullData.content], { type: fullData.mime });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `Trascrizione_${(currentLectureTitle || "Lezione").replace(/[^a-z0-9]/gi, '_')}.${fullData.ext}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                modal.style.display = "none";
+                showHUD(`Trascrizione salvata (.${fullData.ext})`, "💾");
+            };
+        }
+
+        if (btnCopy) {
+            btnCopy.onclick = async () => {
+                const fullData = generateExportData(
+                    offlineSubtitles,
+                    exportCurrentFormat,
+                    exportIncludeTimestamps,
+                    exportLineBreakMode,
+                    currentLectureTitle || "Lezione"
+                );
+                try {
+                    await navigator.clipboard.writeText(fullData.content);
+                    btnCopy.classList.add("copied");
+                    if (copyLabel) copyLabel.innerText = "✓ Copiato!";
+                    showHUD("Trascrizione copiata negli appunti", "📋");
+                    setTimeout(() => {
+                        btnCopy.classList.remove("copied");
+                        if (copyLabel) copyLabel.innerText = "Copia negli Appunti";
+                    }, 2200);
+                } catch (e) {
+                    showHUD("Errore copia appunti", "⚠️");
+                }
+            };
+        }
+
+        const closeModal = () => {
+            modal.style.display = "none";
+        };
+
+        if (closeBtn) closeBtn.onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        updateExportPreview();
+        modal.style.display = "flex";
+    }
+
     const offlineSubtitlesBtnExport = document.getElementById("offline-subtitles-btn-export");
     if (offlineSubtitlesBtnExport) {
-        offlineSubtitlesBtnExport.onclick = () => {
-            if (!offlineSubtitles || offlineSubtitles.length === 0) {
-                showHUD("Nessuna trascrizione da esportare", "⚠️");
-                return;
-            }
-            let txt = "Trascrizione Lezione\n\n";
-            offlineSubtitles.forEach(c => {
-                const h = Math.floor(c.start / 3600).toString().padStart(2, '0');
-                const m = Math.floor((c.start % 3600) / 60).toString().padStart(2, '0');
-                const s = Math.floor(c.start % 60).toString().padStart(2, '0');
-                txt += `[${h}:${m}:${s}] ${c.text}\n`;
-            });
-            const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `Trascrizione_${(currentLectureTitle || "Lezione").replace(/[^a-z0-9]/gi, '_')}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-            showHUD("Trascrizione esportata con successo", "📄");
-        };
+        offlineSubtitlesBtnExport.onclick = () => openOfflineExportModal();
     }
+    
+    
 
     // ==========================================
     // FULLSCREEN TOGGLE & ADAPTIVE HUD
@@ -3172,9 +3457,13 @@ async function initOfflinePlayer() {
         };
     }
 
+    let _topSearchTimer = null;
     if (topLectureSearchInput) {
         topLectureSearchInput.oninput = () => {
-            WebexOfflineDB.listLectures().then(renderTopLectureList);
+            clearTimeout(_topSearchTimer);
+            _topSearchTimer = setTimeout(() => {
+                WebexOfflineDB.listLectures().then(renderTopLectureList);
+            }, 100);
         };
         topLectureSearchInput.onclick = (e) => e.stopPropagation();
     }
@@ -3268,10 +3557,15 @@ async function initOfflinePlayer() {
         };
     }
 
+    let _explorerSearchTimer = null;
     if (searchInput) {
         searchInput.oninput = (e) => {
-            explorerSearchQuery = e.target.value.toLowerCase().trim();
-            renderExplorerFiles();
+            clearTimeout(_explorerSearchTimer);
+            const val = e.target.value.toLowerCase().trim();
+            _explorerSearchTimer = setTimeout(() => {
+                explorerSearchQuery = val;
+                renderExplorerFiles();
+            }, 120);
         };
     }
 
@@ -3445,8 +3739,8 @@ async function initOfflinePlayer() {
             }
 
             // 3. Reconcile DB with Disk:
+            // High-performance metadata matching: NEVER loads Blobs into memory!
             const dbLectures = await WebexOfflineDB.listLectures();
-            const fullDbLectures = await Promise.all(dbLectures.map(l => WebexOfflineDB.getLecture(l.id)));
             const matchedDbLectureIds = new Set();
 
             const normalize = (s) => (s || '')
@@ -3465,7 +3759,7 @@ async function initOfflinePlayer() {
                 let match = null;
 
                 // 1. Direct fileHandle same entry check
-                for (const l of fullDbLectures) {
+                for (const l of dbLectures) {
                     if (l && l.fileHandle && !matchedDbLectureIds.has(l.id)) {
                         try {
                             if (typeof l.fileHandle.isSameEntry === 'function' && await l.fileHandle.isSameEntry(df.fileHandle)) {
@@ -3478,7 +3772,7 @@ async function initOfflinePlayer() {
 
                 // 2. Exact fileName or title + folder match
                 if (!match) {
-                    match = fullDbLectures.find(l => 
+                    match = dbLectures.find(l => 
                         l && !matchedDbLectureIds.has(l.id) && (
                             (l.fileName && l.fileName.toLowerCase() === df.name.toLowerCase()) ||
                             (l.fileHandle && l.fileHandle.name && l.fileHandle.name.toLowerCase() === df.name.toLowerCase()) ||
@@ -3489,7 +3783,7 @@ async function initOfflinePlayer() {
 
                 // 3. Normalized title / originalTitle match (handles user renaming or moving the file)
                 if (!match && normDisk.length >= 3) {
-                    match = fullDbLectures.find(l => {
+                    match = dbLectures.find(l => {
                         if (!l || matchedDbLectureIds.has(l.id)) return false;
                         const nOrig = normalize(l.originalTitle);
                         const nTitle = normalize(l.title);
@@ -3531,33 +3825,39 @@ async function initOfflinePlayer() {
                 }
             }
 
-            // 3B. DB -> Disk: Any lecture in DB that has a blob but is missing on disk -> mirror to disk!
-            for (const l of fullDbLectures) {
+            // 3B. DB -> Disk: Any lecture in DB that has content but is missing on disk -> mirror to disk!
+            for (const l of dbLectures) {
                 if (!l) continue;
                 if (!matchedDbLectureIds.has(l.id)) {
-                    if (l.blob) {
-                        const cleanTitle = (l.title || l.id).replace(/[/\\?%*:|"<>]/g, '_').trim();
-                        const fileName = `${cleanTitle}.mp4`;
-                        const fileFolder = (l.folder || "").trim();
+                    if (l.size && l.size > 0 && !l.isLocalMirror) {
+                        // Load full blob ON-DEMAND only for the specific file being mirrored!
+                        const fullLecture = await WebexOfflineDB.getLecture(l.id);
+                        if (fullLecture && fullLecture.blob) {
+                            const cleanTitle = (fullLecture.title || fullLecture.id).replace(/[/\?%*:|"<>]/g, '_').trim();
+                            const fileName = `${cleanTitle}.mp4`;
+                            const fileFolder = (fullLecture.folder || "").trim();
 
-                        try {
-                            const targetDir = await getOrCreateSubdir(pcFolderDirectoryHandle, fileFolder);
-                            const fh = await targetDir.getFileHandle(fileName, { create: true });
-                            const writable = await fh.createWritable();
-                            await writable.write(l.blob);
-                            await writable.close();
-                            l.fileHandle = fh;
-                            l.fileName = fileName;
-                            l.isLocalMirror = true;
-                            await WebexOfflineDB.saveLecture(l);
-                        } catch (wErr) {
-                            console.warn("Could not mirror DB lecture to disk:", l.id, wErr);
+                            try {
+                                const targetDir = await getOrCreateSubdir(pcFolderDirectoryHandle, fileFolder);
+                                const fh = await targetDir.getFileHandle(fileName, { create: true });
+                                const writable = await fh.createWritable();
+                                await writable.write(fullLecture.blob);
+                                await writable.close();
+                                fullLecture.fileHandle = fh;
+                                fullLecture.fileName = fileName;
+                                fullLecture.isLocalMirror = true;
+                                await WebexOfflineDB.saveLecture(fullLecture);
+                            } catch (wErr) {
+                                console.warn("Could not mirror DB lecture to disk:", fullLecture.id, wErr);
+                            }
                         }
                     } else if (l.id.startsWith("mirror_") && !l.fileHandle) {
                         // Stale mirror entry deleted from disk and without blob -> purge from DB
                         await WebexOfflineDB.deleteLecture(l.id);
                     }
                 }
+                // Yield to main thread between files to guarantee 60fps
+                await new Promise(r => setTimeout(r, 0));
             }
 
             updatePCMirrorUI();
@@ -3834,8 +4134,106 @@ async function initOfflinePlayer() {
         });
     }
 
+    let _explorerRenderToken = 0;
+
+    function createExplorerCardElement(item) {
+        const card = document.createElement("div");
+        card.className = "webex-explorer-card";
+        const sizeMB = Math.round((item.size || 0) / (1024 * 1024));
+        const formattedDate = new Date(item.date).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
+        const durationStr = item.duration ? formatTime(item.duration) : "--:--";
+
+        card.innerHTML = `
+            <div class="webex-explorer-card-info">
+                <div class="webex-explorer-card-title" title="${item.title || item.id}">${item.title || item.id}</div>
+                <div class="webex-explorer-card-meta">
+                    ${item.folder ? `<span class="webex-card-folder-badge" title="${item.folder}">📁 ${item.folder}</span>` : ''}
+                    <span>⏱️ ${durationStr}</span>
+                    <span>💾 ${sizeMB} MB</span>
+                    <span>📅 ${formattedDate}</span>
+                </div>
+            </div>
+            <div class="webex-explorer-card-actions">
+                <button class="webex-folder-pill-btn" type="button" title="Sposta o assegna cartella">
+                    📁 <span class="pill-name">${item.folder || "Nessuna cartella"}</span>
+                    <span class="pill-chevron">▼</span>
+                </button>
+                <button class="btn-top btn-play-card" style="padding: 4px 10px; background: #38bdf8; color: #0f172a; font-weight: 700;">▶ Play</button>
+                <button class="btn-top btn-export-card" title="Scarica copia MP4" style="padding: 4px 8px;">💾</button>
+                <button class="btn-top btn-del-card" title="Elimina lezione" style="padding: 4px 8px; color: #ef4444; border-color: rgba(239,68,68,0.3);">🗑️</button>
+            </div>
+        `;
+
+        const playAction = () => {
+            closeFolderDropdownMenu();
+            playSavedLecture(item.id);
+            closeExplorerModal();
+        };
+
+        card.onclick = playAction;
+
+        const actionsBox = card.querySelector(".webex-explorer-card-actions");
+        if (actionsBox) {
+            actionsBox.addEventListener("click", (e) => e.stopPropagation());
+            actionsBox.addEventListener("mousedown", (e) => e.stopPropagation());
+            actionsBox.addEventListener("pointerdown", (e) => e.stopPropagation());
+        }
+
+        const playBtn = card.querySelector(".btn-play-card");
+        if (playBtn) {
+            playBtn.onclick = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                playAction();
+            };
+        }
+
+        const folderPill = card.querySelector(".webex-folder-pill-btn");
+        if (folderPill) {
+            folderPill.addEventListener("click", (e) => {
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                openFolderDropdownMenu(folderPill, item);
+            });
+        }
+
+        const exportBtn = card.querySelector(".btn-export-card");
+        if (exportBtn) {
+            exportBtn.onclick = async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const data = await WebexOfflineDB.getLecture(item.id);
+                if (data && data.blob) {
+                    const url = URL.createObjectURL(data.blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${(item.title || item.id).replace(/[/\?%*:|"<>]/g, '_')}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                } else {
+                    showHUD("Impossibile esportare: file non presente in locale", "⚠️");
+                }
+            };
+        }
+
+        const delBtn = card.querySelector(".btn-del-card");
+        if (delBtn) {
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                doDeleteLecture(item.id);
+            };
+        }
+
+        return card;
+    }
+
     async function renderExplorerFiles() {
         if (!fileListEl) return;
+        const currentToken = ++_explorerRenderToken;
         const [sortField, sortOrder] = explorerCurrentSort.split("_");
         
         let filesToShow = await WebexOfflineDB.listLectures(
@@ -3843,6 +4241,8 @@ async function initOfflinePlayer() {
             sortField,
             sortOrder
         );
+
+        if (currentToken !== _explorerRenderToken) return;
 
         if (explorerSearchQuery) {
             filesToShow = filesToShow.filter(l => 
@@ -3871,98 +4271,30 @@ async function initOfflinePlayer() {
             return;
         }
 
-        filesToShow.forEach(item => {
-            const card = document.createElement("div");
-            card.className = "webex-explorer-card";
-            const sizeMB = Math.round((item.size || 0) / (1024 * 1024));
-            const formattedDate = new Date(item.date).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
-            const durationStr = item.duration ? formatTime(item.duration) : "--:--";
+        // Progressive chunked streaming: first batch rendered immediately (< 16ms), then streamed via rAF
+        const CHUNK_SIZE = 12;
+        let currentIndex = 0;
 
-            card.innerHTML = `
-                <div class="webex-explorer-card-info">
-                    <div class="webex-explorer-card-title">${item.title || item.id}</div>
-                    <div class="webex-explorer-card-meta">
-                        ${item.folder ? `<span style="background: rgba(56,189,248,0.18); color: #38bdf8; padding: 1px 7px; border-radius: 4px; font-weight: 600;">📁 ${item.folder}</span>` : ''}
-                        <span>⏱️ ${durationStr}</span>
-                        <span>📦 ${sizeMB} MB</span>
-                        <span>📅 ${formattedDate}</span>
-                    </div>
-                </div>
-                <div class="webex-explorer-card-actions">
-                    <button class="webex-folder-pill-btn" type="button" title="Sposta o assegna cartella">
-                        📁 <span class="pill-name">${item.folder || "Nessuna cartella"}</span>
-                        <span class="pill-chevron">▾</span>
-                    </button>
-                    <button class="btn-top btn-play-card" style="padding: 4px 10px; background: #38bdf8; color: #0f172a; font-weight: 700;">▶ Play</button>
-                    <button class="btn-top btn-export-card" title="Scarica copia MP4" style="padding: 4px 8px;">💾</button>
-                    <button class="btn-top btn-del-card" title="Elimina lezione" style="padding: 4px 8px; color: #ef4444; border-color: rgba(239,68,68,0.3);">🗑️</button>
-                </div>
-            `;
+        function renderNextChunk() {
+            if (currentToken !== _explorerRenderToken) return;
+            const fragment = document.createDocumentFragment();
+            const end = Math.min(currentIndex + CHUNK_SIZE, filesToShow.length);
 
-            const playAction = () => {
-                closeFolderDropdownMenu();
-                playSavedLecture(item.id);
-                closeExplorerModal();
-            };
-
-            card.onclick = playAction;
-
-            const actionsBox = card.querySelector(".webex-explorer-card-actions");
-            if (actionsBox) {
-                actionsBox.addEventListener("click", (e) => e.stopPropagation());
-                actionsBox.addEventListener("mousedown", (e) => e.stopPropagation());
-                actionsBox.addEventListener("pointerdown", (e) => e.stopPropagation());
+            for (let i = currentIndex; i < end; i++) {
+                const item = filesToShow[i];
+                const card = createExplorerCardElement(item);
+                fragment.appendChild(card);
             }
 
-            const playBtn = card.querySelector(".btn-play-card");
-            if (playBtn) {
-                playBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    playAction();
-                };
-            }
+            fileListEl.appendChild(fragment);
+            currentIndex = end;
 
-            const folderPill = card.querySelector(".webex-folder-pill-btn");
-            if (folderPill) {
-                folderPill.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    e.preventDefault();
-                    openFolderDropdownMenu(folderPill, item);
-                });
+            if (currentIndex < filesToShow.length) {
+                requestAnimationFrame(renderNextChunk);
             }
+        }
 
-            const exportBtn = card.querySelector(".btn-export-card");
-            if (exportBtn) {
-                exportBtn.onclick = async (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    const data = await WebexOfflineDB.getLecture(item.id);
-                    if (data && data.blob) {
-                        const url = URL.createObjectURL(data.blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `${(item.title || item.id).replace(/[/\\?%*:|"<>]/g, '_')}.mp4`;
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
-                        showHUD("Download avviato", "💾");
-                    }
-                };
-            }
-
-            const delBtn = card.querySelector(".btn-del-card");
-            if (delBtn) {
-                delBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    doDeleteLecture(item);
-                };
-            }
-
-            fileListEl.appendChild(card);
-        });
+        renderNextChunk();
     }
 
     // --- Liquid Glass Folder Selection Popup Menu (with Subfolders) ---
@@ -4319,7 +4651,7 @@ async function initOfflinePlayer() {
             return;
         }
 
-        const openDenoise = document.getElementById("offline-denoise-overlay");
+        const openDenoise = document.getElementById("offline-denoise-panel");
         if (openDenoise && openDenoise.classList.contains("is-open")) {
             if (e.key === "Escape") {
                 openDenoise.classList.remove("is-open");
@@ -4533,10 +4865,8 @@ async function initOfflinePlayer() {
         }
     } catch (_) {}
 
-    // 1. Initial UI render from IndexedDB immediately (never block on external/disk operations)
+    // 1. Initial UI render from lightweight metadata (instant < 20ms)
     await syncTopDropdown();
-    await renderExplorerFolders();
-    await renderExplorerFiles();
     updateBookmarkFlyout();
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -4557,8 +4887,10 @@ async function initOfflinePlayer() {
         await playSavedLecture(playableSaved[0].id);
     }
 
-    // 2. PC mirror folder persistence runs asynchronously in background
-    initPCFolderPersistence().catch(err => console.warn("PC folder init note:", err));
+    // 2. PC mirror folder persistence runs deferred in background to guarantee 60fps startup
+    setTimeout(() => {
+        initPCFolderPersistence().catch(err => console.warn("PC folder init note:", err));
+    }, 1500);
 }
 
 // Ensure startup runs whether DOMContentLoaded has already fired or is still loading

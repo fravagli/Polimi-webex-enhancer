@@ -90,7 +90,7 @@
         { id: "negative", name: "Negativo" }
     ];
     let isSilenceSkipActive = false;
-    let silenceSkipSpeed = 3.0;
+    let silenceSkipSpeed = parseFloat(localStorage.getItem('webex_silence_speed')) || 3.0;
     let silenceToleranceSeconds = parseFloat(localStorage.getItem('webex_silence_tolerance')) || 1.0;
     let silenceAnalyser = null;
     let silenceDataArray = null;
@@ -795,6 +795,7 @@
 
     function setSilenceSpeed(speed) {
         silenceSkipSpeed = Math.max(2.0, Math.min(5.0, speed));
+        try { localStorage.setItem('webex_silence_speed', silenceSkipSpeed.toString()); } catch (e) {}
         showHUD(`Velocità silenzio: ${silenceSkipSpeed.toFixed(1)}x`, "🤫");
         updateActionButtonsState();
     }
@@ -828,11 +829,14 @@
         const video = getPrimaryVideo();
         if (!video) return null;
         if (window.__polimiAudioEnhancer) {
-            window.__polimiAudioEnhancer.attachVideo(video);
-            if (currentVolumeBoost > 1.0 || isSilenceSkipActive || window.__polimiAudioEnhancer.isAnyFilterActive()) {
+            const needHook = currentVolumeBoost > 1.0 || isSilenceSkipActive || window.__polimiAudioEnhancer.isAnyFilterActive();
+            if (needHook) {
+                window.__polimiAudioEnhancer.attachVideo(video, true);
                 if (!window.__polimiAudioEnhancer.isInitialized) {
                     window.__polimiAudioEnhancer.initPipeline();
                 }
+            } else {
+                window.__polimiAudioEnhancer.attachVideo(video, false);
             }
             audioCtx = window.__polimiAudioEnhancer.audioCtx;
             audioSource = window.__polimiAudioEnhancer.sourceNode;
@@ -1998,28 +2002,300 @@ if (window.WebexOfflineDB) {
         if (topCloseBtn) topCloseBtn.onclick = () => toggleSubtitlesPanel(false);
 
 
-        const btnExport = document.getElementById("webex-subtitles-btn-export");
-        if (btnExport) {
-            btnExport.onclick = () => {
-                if (!subtitlesCues || subtitlesCues.length === 0) return;
-                let txt = "Trascrizione Lezione\n\n";
-                subtitlesCues.forEach(c => {
-                    const h = Math.floor(c.start / 3600).toString().padStart(2, '0');
-                    const m = Math.floor((c.start % 3600) / 60).toString().padStart(2, '0');
-                    const s = Math.floor(c.start % 60).toString().padStart(2, '0');
-                    txt += `[${h}:${m}:${s}] ${c.text}\n`;
-                });
-                const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+        // Liquid Glass Transcription Export Engine for Webex
+    function formatTimeHMS(sec) {
+        const s = Math.max(0, Number(sec) || 0);
+        const h = Math.floor(s / 3600).toString().padStart(2, '0');
+        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const secPart = Math.floor(s % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${secPart}`;
+    }
+
+    function formatTimeSRT(sec) {
+        const s = Math.max(0, Number(sec) || 0);
+        const h = Math.floor(s / 3600).toString().padStart(2, '0');
+        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const secPart = Math.floor(s % 60).toString().padStart(2, '0');
+        const ms = Math.floor((s % 1) * 1000).toString().padStart(3, '0');
+        return `${h}:${m}:${secPart},${ms}`;
+    }
+
+    function generateWebexExportData(cues, format, includeTimestamps, lineBreakMode, lectureTitle) {
+        if (!cues || cues.length === 0) return { content: "", mime: "text/plain", ext: "txt" };
+
+        if (format === "srt") {
+            let srt = "";
+            cues.forEach((c, idx) => {
+                const start = formatTimeSRT(c.start);
+                const end = formatTimeSRT(c.end || (c.start + 3));
+                srt += (idx + 1) + "\r\n" + start + " --> " + end + "\r\n" + (c.text || "").trim() + "\r\n\r\n";
+            });
+            return { content: srt.trim(), mime: "text/plain;charset=utf-8", ext: "srt" };
+        }
+
+        if (format === "json") {
+            const payload = {
+                title: lectureTitle || (document.title || "Lezione"),
+                exportedAt: new Date().toISOString(),
+                totalSegments: cues.length,
+                segments: cues.map(c => {
+                    const seg = { text: (c.text || "").trim() };
+                    if (includeTimestamps) {
+                        seg.start = Number(c.start.toFixed(2));
+                        seg.end = Number((c.end || c.start).toFixed(2));
+                        seg.timestamp = formatTimeHMS(c.start);
+                    }
+                    return seg;
+                })
+            };
+            return { content: JSON.stringify(payload, null, 2), mime: "application/json;charset=utf-8", ext: "json" };
+        }
+
+        // Default: TXT
+        let txt = "";
+        if (lineBreakMode === "newline") {
+            cues.forEach(c => {
+                const timePrefix = includeTimestamps ? "[" + formatTimeHMS(c.start) + "] " : "";
+                txt += timePrefix + (c.text || "").trim() + "\n";
+            });
+        } else {
+            const parts = [];
+            cues.forEach(c => {
+                const timePrefix = includeTimestamps ? "[" + formatTimeHMS(c.start) + "] " : "";
+                const t = (c.text || "").trim();
+                if (t) parts.push(timePrefix + t);
+            });
+            txt = parts.join(" ");
+        }
+        return { content: txt.trim(), mime: "text/plain;charset=utf-8", ext: "txt" };
+    }
+
+    let webexExportFormat = "txt";
+    let webexExportTimestamps = true;
+    let webexExportLineBreak = "newline";
+
+    function openWebexExportModal() {
+        if (!subtitlesCues || subtitlesCues.length === 0) {
+            showHUD("Nessuna trascrizione disponibile da esportare", "⚠️");
+            return;
+        }
+
+        let modal = document.getElementById("webex-export-modal-overlay");
+        if (!modal) {
+            modal = document.createElement("div");
+            modal.id = "webex-export-modal-overlay";
+            modal.className = "webex-export-modal-overlay";
+            modal.innerHTML = `
+                <div class="webex-export-modal">
+                    <div class="webex-export-header">
+                        <div class="webex-export-header-title">
+                            <span style="font-size: 20px;">📄</span>
+                            <div>
+                                <h3>Esporta Trascrizione</h3>
+                                <p>Personalizza formato, marcatori e struttura del testo</p>
+                            </div>
+                        </div>
+                        <button class="webex-helper-close-btn" id="webex-export-close" title="Chiudi (Esc)">✕</button>
+                    </div>
+                    <div class="webex-export-body">
+                        <!-- 1. Formato File -->
+                        <div class="webex-export-section">
+                            <div class="webex-export-label">
+                                <span>Formato File</span>
+                                <span id="webex-export-ext-badge" style="font-size: 10px; color: #38bdf8; text-transform: none; font-weight: 600;">.txt</span>
+                            </div>
+                            <div class="webex-export-seg-control" id="webex-export-format-group">
+                                <button type="button" class="webex-export-seg-btn active" data-format="txt">TXT (Testo)</button>
+                                <button type="button" class="webex-export-seg-btn" data-format="srt">SRT (Sottotitoli)</button>
+                                <button type="button" class="webex-export-seg-btn" data-format="json">JSON (Dati)</button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Timestamp Toggle -->
+                        <div class="webex-export-section" id="webex-export-ts-section">
+                            <label class="webex-export-toggle-card">
+                                <div class="webex-export-toggle-info">
+                                    <span class="webex-export-toggle-title">Includi Timestamp</span>
+                                    <span class="webex-export-toggle-desc">Aggiunge [00:12:34] all'inizio di ogni frase</span>
+                                </div>
+                                <div class="webex-export-switch">
+                                    <input type="checkbox" id="webex-export-chk-timestamps" checked>
+                                    <span class="webex-export-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- 3. Formattazione Linee -->
+                        <div class="webex-export-section" id="webex-export-lines-section">
+                            <div class="webex-export-label">
+                                <span>Struttura Frasi</span>
+                            </div>
+                            <div class="webex-export-seg-control" id="webex-export-lines-group">
+                                <button type="button" class="webex-export-seg-btn active" data-lines="newline">↵ A capo per frase</button>
+                                <button type="button" class="webex-export-seg-btn" data-lines="continuous">▤ Testo continuo</button>
+                            </div>
+                        </div>
+
+                        <!-- 4. Real-time Preview -->
+                        <div class="webex-export-section">
+                            <div class="webex-export-label">
+                                <span>Anteprima</span>
+                                <span id="webex-export-cue-count" style="font-size: 10px; color: #94a3b8; text-transform: none; font-weight: 500;">0 segmenti</span>
+                            </div>
+                            <div class="webex-export-preview-box" id="webex-export-preview">
+                                Caricamento anteprima...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="webex-export-footer">
+                        <button type="button" class="webex-export-btn-secondary" id="webex-export-btn-copy">
+                            <span class="icon">📋</span>
+                            <span id="webex-export-copy-label">Copia negli Appunti</span>
+                        </button>
+                        <button type="button" class="webex-export-btn-primary" id="webex-export-btn-download">
+                            <span class="icon">💾</span>
+                            <span id="webex-export-dl-label">Scarica File (.txt)</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        const closeBtn = document.getElementById("webex-export-close");
+        const formatBtns = modal.querySelectorAll("#webex-export-format-group .webex-export-seg-btn");
+        const chkTimestamps = document.getElementById("webex-export-chk-timestamps");
+        const tsSection = document.getElementById("webex-export-ts-section");
+        const linesSection = document.getElementById("webex-export-lines-section");
+        const lineBtns = modal.querySelectorAll("#webex-export-lines-group .webex-export-seg-btn");
+        const previewBox = document.getElementById("webex-export-preview");
+        const extBadge = document.getElementById("webex-export-ext-badge");
+        const cueCountBadge = document.getElementById("webex-export-cue-count");
+        const btnDl = document.getElementById("webex-export-btn-download");
+        const btnCopy = document.getElementById("webex-export-btn-copy");
+        const copyLabel = document.getElementById("webex-export-copy-label");
+        const dlLabel = document.getElementById("webex-export-dl-label");
+
+        if (cueCountBadge) cueCountBadge.innerText = `${subtitlesCues.length} frasi`;
+
+        function updateExportPreview() {
+            if (webexExportFormat === "srt") {
+                if (tsSection) tsSection.style.display = "none";
+                if (linesSection) linesSection.style.display = "none";
+            } else if (webexExportFormat === "json") {
+                if (tsSection) tsSection.style.display = "flex";
+                if (linesSection) linesSection.style.display = "none";
+            } else {
+                if (tsSection) tsSection.style.display = "flex";
+                if (linesSection) linesSection.style.display = "flex";
+            }
+
+            if (extBadge) extBadge.innerText = `.${webexExportFormat}`;
+            if (dlLabel) dlLabel.innerText = `Scarica File (.${webexExportFormat})`;
+
+            formatBtns.forEach(b => b.classList.toggle("active", b.dataset.format === webexExportFormat));
+            lineBtns.forEach(b => b.classList.toggle("active", b.dataset.lines === webexExportLineBreak));
+            if (chkTimestamps) chkTimestamps.checked = webexExportTimestamps;
+
+            const sampleCues = subtitlesCues.slice(0, 5);
+            const generated = generateWebexExportData(
+                sampleCues,
+                webexExportFormat,
+                webexExportTimestamps,
+                webexExportLineBreak,
+                document.title || "Lezione"
+            );
+
+            if (previewBox) {
+                previewBox.innerText = generated.content + (subtitlesCues.length > 5 ? "\n\n... (" + (subtitlesCues.length - 5) + " altri segmenti)" : "");
+            }
+        }
+
+        formatBtns.forEach(btn => {
+            btn.onclick = () => {
+                webexExportFormat = btn.dataset.format;
+                updateExportPreview();
+            };
+        });
+
+        if (chkTimestamps) {
+            chkTimestamps.onchange = (e) => {
+                webexExportTimestamps = e.target.checked;
+                updateExportPreview();
+            };
+        }
+
+        lineBtns.forEach(btn => {
+            btn.onclick = () => {
+                webexExportLineBreak = btn.dataset.lines;
+                updateExportPreview();
+            };
+        });
+
+        if (btnDl) {
+            btnDl.onclick = () => {
+                const fullData = generateWebexExportData(
+                    subtitlesCues,
+                    webexExportFormat,
+                    webexExportTimestamps,
+                    webexExportLineBreak,
+                    document.title || "Lezione"
+                );
+                const blob = new Blob([fullData.content], { type: fullData.mime });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `Trascrizione_${(document.title || "Lezione").replace(/[^a-z0-9]/gi, '_')}.txt`;
+                a.download = `Trascrizione_${(document.title || "Lezione").replace(/[^a-z0-9]/gi, '_')}.${fullData.ext}`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
+                modal.style.display = "none";
+                showHUD(`Trascrizione salvata (.${fullData.ext})`, "💾");
             };
         }
+
+        if (btnCopy) {
+            btnCopy.onclick = async () => {
+                const fullData = generateWebexExportData(
+                    subtitlesCues,
+                    webexExportFormat,
+                    webexExportTimestamps,
+                    webexExportLineBreak,
+                    document.title || "Lezione"
+                );
+                try {
+                    await navigator.clipboard.writeText(fullData.content);
+                    btnCopy.classList.add("copied");
+                    if (copyLabel) copyLabel.innerText = "✓ Copiato!";
+                    showHUD("Trascrizione copiata negli appunti", "📋");
+                    setTimeout(() => {
+                        btnCopy.classList.remove("copied");
+                        if (copyLabel) copyLabel.innerText = "Copia negli Appunti";
+                    }, 2200);
+                } catch (e) {
+                    showHUD("Errore copia appunti", "⚠️");
+                }
+            };
+        }
+
+        const closeModal = () => {
+            modal.style.display = "none";
+        };
+
+        if (closeBtn) closeBtn.onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        updateExportPreview();
+        modal.style.display = "flex";
+    }
+
+    const btnExport = document.getElementById("webex-subtitles-btn-export");
+    if (btnExport) {
+        btnExport.onclick = () => openWebexExportModal();
+    }
     
         const footerCloseBtn = subtitlesPanelEl.querySelector("#webex-subtitles-footer-close");
         if (footerCloseBtn) footerCloseBtn.onclick = () => toggleSubtitlesPanel(false);
@@ -4372,13 +4648,20 @@ if (window.WebexOfflineDB) {
             return;
         }
 
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        const targetRoot = fsEl || document.body;
+
+        // Self-healing: Ensure qBar is always directly under targetRoot, never trapped in tb!
+        if (qBar.parentElement !== targetRoot) {
+            targetRoot.appendChild(qBar);
+        }
+
         const container = getPlayerContainer();
         const vid = getPrimaryVideo();
         const rect = container ? container.getBoundingClientRect() : (vid ? vid.getBoundingClientRect() : null);
 
         if (rect && rect.width > 0 && rect.height > 0) {
-            const isFullscreen = !!(document.fullscreenElement && (document.fullscreenElement === container || document.fullscreenElement === vid)) || 
-                                 (window.innerWidth === screen.width && window.innerHeight === screen.height);
+            const isFullscreen = !!fsEl || (window.innerWidth === screen.width && window.innerHeight === screen.height);
             const spaceBelow = window.innerHeight - rect.bottom;
 
             if (isFullscreen) {
@@ -4465,150 +4748,228 @@ if (window.WebexOfflineDB) {
     }
 
     document.addEventListener("mousemove", handleQABarFullscreenActivity);
-    document.addEventListener("fullscreenchange", () => {
-        repositionQuickActionsBar();
-        handleQABarFullscreenActivity();
+
+    // =========================================================================
+    // UNIFIED FULLSCREEN CONTROLLER (Both Webex native & standard DOM)
+    // =========================================================================
+    function handleUnifiedFullscreenChange() {
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        const targetRoot = fsEl || document.body;
+
+        const tb = document.getElementById("webex-helper-toolbar-container");
+        const qb = document.getElementById("webex-quick-actions-bar");
+
+        if (tb) {
+            if (fsEl) {
+                fsEl.appendChild(tb);
+                tb.style.zIndex = "2147483647";
+            } else {
+                document.body.appendChild(tb);
+                tb.style.zIndex = "2147483640";
+            }
+            updateToolbarPosition();
+        }
+
+        if (qb) {
+            // CRITICAL ARCHITECTURAL FIX:
+            // ALWAYS append qb directly to targetRoot (fsEl or document.body), NEVER into tb!
+            targetRoot.appendChild(qb);
+            qb.style.zIndex = "2147483647";
+            qb.style.display = "flex";
+            repositionQuickActionsBar();
+            handleQABarFullscreenActivity();
+        }
+
+        // Reparent active floating panels to stay in top layer during fullscreen
+        const floatingPanels = [
+            document.getElementById("webex-denoise-panel"),
+            document.getElementById("webex-notes-glass-modal"),
+            document.getElementById("webex-shortcuts-modal"),
+            document.getElementById("webex-subtitles-panel")
+        ];
+        floatingPanels.forEach(panel => {
+            if (panel && panel.parentElement !== targetRoot) {
+                targetRoot.appendChild(panel);
+                panel.style.zIndex = "2147483647";
+            }
+        });
+    }
+
+    const fsEvents = ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"];
+    fsEvents.forEach(evt => {
+        document.addEventListener(evt, handleUnifiedFullscreenChange, { passive: true });
+        window.addEventListener(evt, handleUnifiedFullscreenChange, { passive: true });
     });
 
     // ==========================================
     // AUDIO DENOISE & DSP FILTERS MODAL (ONLINE)
     // ==========================================
     function ensureWebexDenoiseModal() {
-        let overlay = document.getElementById("webex-denoise-overlay");
-        if (overlay) return overlay;
+        let panel = document.getElementById("webex-denoise-panel");
+        if (panel) return panel;
 
-        overlay = document.createElement("div");
-        overlay.className = "webex-denoise-overlay";
-        overlay.id = "webex-denoise-overlay";
-        overlay.style.display = "none";
-        overlay.innerHTML = `
-            <div class="webex-denoise-modal" id="webex-denoise-modal">
-                <!-- Header -->
-                <div class="webex-denoise-header">
-                    <div class="webex-denoise-title-box">
-                        <span class="webex-denoise-icon">🎙️</span>
-                        <div>
-                            <h3 class="webex-denoise-title">Pulizia Audio & Rimozione Rumore</h3>
-                            <p class="webex-denoise-subtitle">Filtri DSP in tempo reale e soppressione neurale RNNoise (WASM)</p>
-                        </div>
+        panel = document.createElement("div");
+        panel.className = "webex-denoise-panel";
+        panel.id = "webex-denoise-panel";
+        panel.style.display = "none";
+        panel.innerHTML = `
+            <!-- Header (Draggable) -->
+            <div class="webex-denoise-header" id="webex-denoise-header">
+                <div class="webex-denoise-title-box">
+                    <span class="webex-denoise-icon">🎙️</span>
+                    <div>
+                        <h3 class="webex-denoise-title">Filtri & Pulizia Audio</h3>
+                        <p class="webex-denoise-subtitle">DSP in tempo reale & Rete Neurale</p>
                     </div>
-                    <div class="webex-denoise-header-actions">
-                        <span class="webex-denoise-status-badge" id="webex-denoise-status">⚪ Disattivato</span>
-                        <button type="button" class="webex-denoise-close-btn" id="webex-denoise-close" title="Chiudi (Esc)">✕</button>
+                </div>
+                <div class="webex-denoise-header-actions">
+                    <div class="webex-denoise-master-wrap" id="webex-denoise-master-wrap" title="Attiva/Disattiva tutti i miglioramenti audio">
+                        <span class="webex-denoise-master-label" id="webex-denoise-master-lbl">OFF</span>
+                        <label class="webex-denoise-switch webex-denoise-switch-master">
+                            <input type="checkbox" id="webex-denoise-master-toggle">
+                            <span class="webex-denoise-slider"></span>
+                        </label>
+                    </div>
+                    <button type="button" class="webex-denoise-close-btn" id="webex-denoise-close" title="Chiudi (Esc)">✕</button>
+                </div>
+            </div>
+
+            <!-- Presets Row -->
+            <div class="webex-denoise-presets-box">
+                <span class="webex-denoise-presets-label">Preset:</span>
+                <div class="webex-denoise-presets-chips">
+                    <button type="button" class="webex-denoise-chip" data-preset="clear_voice" title="RNNoise AI + Anti-Ronzio 130Hz + De-Hiss 5kHz">⚡ Voce Chiara (Consigliato)</button>
+                    <button type="button" class="webex-denoise-chip" data-preset="noisy_room" title="RNNoise AI + Anti-Ronzio 160Hz + De-Hiss 4.2kHz + Noise Gate">💨 Aula Rumorosa</button>
+                    <button type="button" class="webex-denoise-chip" data-preset="light_filters" title="Solo filtri DSP passa-alto e passa-basso senza AI">🧼 Solo Filtri</button>
+                </div>
+            </div>
+
+            <!-- Sections Body -->
+            <div class="webex-denoise-body">
+                <!-- 1. RNNoise AI (Hero Section) -->
+                <div class="webex-denoise-section-ai" id="webex-card-rnnoise">
+                    <div class="webex-denoise-card-header">
+                        <div class="webex-denoise-card-info">
+                            <div class="webex-denoise-card-title">
+                                <span class="webex-denoise-section-icon">🧠</span>
+                                <span>Soppressione Neurale AI</span>
+                                <span class="webex-denoise-pill ai-pill">RNNoise 48kHz</span>
+                            </div>
+                            <p class="webex-denoise-card-desc">Isola la voce del docente tramite deep learning ed elimina rumori d'aula, ventole e rimbombi.</p>
+                        </div>
+                        <label class="webex-denoise-switch">
+                            <input type="checkbox" id="webex-denoise-rnnoise-toggle">
+                            <span class="webex-denoise-slider"></span>
+                        </label>
                     </div>
                 </div>
 
-                <!-- Presets Row -->
-                <div class="webex-denoise-presets-box">
-                    <span class="webex-denoise-presets-label">Preset Rapidi:</span>
-                    <div class="webex-denoise-presets-chips">
-                        <button type="button" class="webex-denoise-chip" data-preset="clear_voice" title="RNNoise + Anti-Ronzio 95Hz + De-Hiss 8.5kHz">⚡ Voce Chiara (Consigliato)</button>
-                        <button type="button" class="webex-denoise-chip" data-preset="noisy_room" title="RNNoise + Anti-Ronzio 120Hz + Noise Gate attivo">💨 Aula Rumorosa / Ventole</button>
-                        <button type="button" class="webex-denoise-chip" data-preset="light_filters" title="Solo filtri passa-alto e passa-basso senza AI">🧼 Solo Filtri</button>
-                        <button type="button" class="webex-denoise-chip reset" data-preset="reset" title="Disattiva tutti i filtri">🔄 Originale</button>
-                    </div>
-                </div>
-
-                <!-- Sections Body -->
-                <div class="webex-denoise-body">
-                    <!-- 1. RNNoise AI -->
-                    <div class="webex-denoise-card" id="webex-card-rnnoise">
-                        <div class="webex-denoise-card-header">
-                            <div class="webex-denoise-card-info">
-                                <div class="webex-denoise-card-title">
-                                    <span>🧠 Soppressione Rumore Neurale (RNNoise AI)</span>
-                                    <span class="webex-denoise-pill">Rete Neurale 48kHz</span>
-                                </div>
-                                <p class="webex-denoise-card-desc">Isola la voce del docente rimuovendo fruscii continui, rimbombi d'aula e ventole del proiettore.</p>
+                <!-- 2. DSP Master Section -->
+                <div class="webex-denoise-section-dsp" id="webex-card-dsp">
+                    <div class="webex-denoise-dsp-master-header">
+                        <div class="webex-denoise-dsp-master-title">
+                            <span class="webex-denoise-section-icon">🎚️</span>
+                            <div>
+                                <span class="webex-denoise-group-name">Filtri Audio DSP</span>
+                                <span class="webex-denoise-group-sub">Tagli di frequenza e silenziamento dinamico</span>
                             </div>
-                            <label class="webex-denoise-switch">
-                                <input type="checkbox" id="webex-denoise-rnnoise-toggle">
+                        </div>
+                        <div class="webex-denoise-dsp-toggle-box" title="Attiva/Disattiva tutti i 3 filtri DSP insieme">
+                            <span class="webex-denoise-sub-label">Tutti i filtri</span>
+                            <label class="webex-denoise-switch webex-denoise-switch-sm">
+                                <input type="checkbox" id="webex-denoise-dsp-master-toggle" checked>
                                 <span class="webex-denoise-slider"></span>
                             </label>
                         </div>
                     </div>
 
-                    <!-- 2. High-Pass Filter (Anti-Ronzio) -->
-                    <div class="webex-denoise-card" id="webex-card-highpass">
-                        <div class="webex-denoise-card-header">
-                            <div class="webex-denoise-card-info">
-                                <div class="webex-denoise-card-title">
-                                    <span>⚡ Filtro Anti-Ronzio (High-Pass)</span>
+                    <div class="webex-denoise-dsp-items">
+                        <!-- High-Pass Filter (Anti-Ronzio) -->
+                        <div class="webex-denoise-dsp-item" id="webex-card-highpass">
+                            <div class="webex-denoise-item-row">
+                                <div class="webex-denoise-item-info">
+                                    <div class="webex-denoise-item-title">
+                                        <span>⚡ Anti-Ronzio (High-Pass 24dB)</span>
+                                    </div>
+                                    <p class="webex-denoise-item-desc">Taglia ronzii a 50Hz, colpi su cattedra e rombi a bassa frequenza.</p>
                                 </div>
-                                <p class="webex-denoise-card-desc">Taglia i ronzii elettrici dell'impianto audio (50/60 Hz), colpi sulla cattedra e rombi a bassa frequenza.</p>
+                                <label class="webex-denoise-switch webex-denoise-switch-sm">
+                                    <input type="checkbox" id="webex-denoise-highpass-toggle">
+                                    <span class="webex-denoise-slider"></span>
+                                </label>
                             </div>
-                            <label class="webex-denoise-switch">
-                                <input type="checkbox" id="webex-denoise-highpass-toggle">
-                                <span class="webex-denoise-slider"></span>
-                            </label>
-                        </div>
-                        <div class="webex-denoise-slider-box" id="webex-box-highpass-slider">
-                            <div class="webex-denoise-slider-meta">
-                                <span>Taglio basse frequenze:</span>
-                                <b id="webex-val-highpass-freq">90 Hz</b>
+                            <div class="webex-denoise-slider-box" id="webex-box-highpass-slider">
+                                <div class="webex-denoise-slider-meta">
+                                    <span>Taglio basse frequenze:</span>
+                                    <b id="webex-val-highpass-freq">140 Hz</b>
+                                </div>
+                                <input type="range" class="webex-denoise-range" id="webex-slider-highpass-freq" min="50" max="1200" step="10" value="140">
                             </div>
-                            <input type="range" class="webex-denoise-range" id="webex-slider-highpass-freq" min="30" max="250" step="5" value="90">
                         </div>
-                    </div>
 
-                    <!-- 3. Low-Pass Filter (De-Hiss) -->
-                    <div class="webex-denoise-card" id="webex-card-lowpass">
-                        <div class="webex-denoise-card-header">
-                            <div class="webex-denoise-card-info">
-                                <div class="webex-denoise-card-title">
-                                    <span>🔇 Filtro Anti-Fruscio (De-Hiss / Low-Pass)</span>
+                        <!-- Low-Pass Filter (De-Hiss) -->
+                        <div class="webex-denoise-dsp-item" id="webex-card-lowpass">
+                            <div class="webex-denoise-item-row">
+                                <div class="webex-denoise-item-info">
+                                    <div class="webex-denoise-item-title">
+                                        <span>🔇 Anti-Fruscio (De-Hiss Low-Pass 24dB)</span>
+                                    </div>
+                                    <p class="webex-denoise-item-desc">Attenua sibili metallici, fruscio di fondo e rumore del microfono.</p>
                                 </div>
-                                <p class="webex-denoise-card-desc">Attenua sibili metallici acuti, fruscii bianchi e rumore del preamplificatore del microfono.</p>
+                                <label class="webex-denoise-switch webex-denoise-switch-sm">
+                                    <input type="checkbox" id="webex-denoise-lowpass-toggle">
+                                    <span class="webex-denoise-slider"></span>
+                                </label>
                             </div>
-                            <label class="webex-denoise-switch">
-                                <input type="checkbox" id="webex-denoise-lowpass-toggle">
-                                <span class="webex-denoise-slider"></span>
-                            </label>
-                        </div>
-                        <div class="webex-denoise-slider-box" id="webex-box-lowpass-slider">
-                            <div class="webex-denoise-slider-meta">
-                                <span>Taglio alte frequenze:</span>
-                                <b id="webex-val-lowpass-freq">8000 Hz</b>
+                            <div class="webex-denoise-slider-box" id="webex-box-lowpass-slider">
+                                <div class="webex-denoise-slider-meta">
+                                    <span>Taglio alte frequenze:</span>
+                                    <b id="webex-val-lowpass-freq">4500 Hz</b>
+                                </div>
+                                <input type="range" class="webex-denoise-range" id="webex-slider-lowpass-freq" min="1000" max="12000" step="100" value="4500">
                             </div>
-                            <input type="range" class="webex-denoise-range" id="webex-slider-lowpass-freq" min="4000" max="14000" step="250" value="8000">
                         </div>
-                    </div>
 
-                    <!-- 4. Noise Gate (Silenziatore Pause) -->
-                    <div class="webex-denoise-card" id="webex-card-gate">
-                        <div class="webex-denoise-card-header">
-                            <div class="webex-denoise-card-info">
-                                <div class="webex-denoise-card-title">
-                                    <span>🤫 Noise Gate (Silenziamento Pause)</span>
+                        <!-- Noise Gate (Silenziatore Pause) -->
+                        <div class="webex-denoise-dsp-item" id="webex-card-gate">
+                            <div class="webex-denoise-item-row">
+                                <div class="webex-denoise-item-info">
+                                    <div class="webex-denoise-item-title">
+                                        <span>🤫 Noise Gate (Silenziamento Pause)</span>
+                                    </div>
+                                    <p class="webex-denoise-item-desc">Azzera il rumore residuo dell'aula nei secondi in cui il docente non parla.</p>
                                 </div>
-                                <p class="webex-denoise-card-desc">Azzera il rumore residuo dell'aula nei secondi in cui il professore non parla.</p>
+                                <label class="webex-denoise-switch webex-denoise-switch-sm">
+                                    <input type="checkbox" id="webex-denoise-gate-toggle">
+                                    <span class="webex-denoise-slider"></span>
+                                </label>
                             </div>
-                            <label class="webex-denoise-switch">
-                                <input type="checkbox" id="webex-denoise-gate-toggle">
-                                <span class="webex-denoise-slider"></span>
-                            </label>
-                        </div>
-                        <div class="webex-denoise-slider-box" id="webex-box-gate-slider">
-                            <div class="webex-denoise-slider-meta">
-                                <span>Soglia di attivazione:</span>
-                                <b id="webex-val-gate-thresh">-45 dB</b>
+                            <div class="webex-denoise-slider-box" id="webex-box-gate-slider">
+                                <div class="webex-denoise-slider-meta">
+                                    <span>Soglia di apertura gate:</span>
+                                    <b id="webex-val-gate-thresh">-42 dB</b>
+                                </div>
+                                <input type="range" class="webex-denoise-range" id="webex-slider-gate-thresh" min="-65" max="-20" step="1" value="-42">
                             </div>
-                            <input type="range" class="webex-denoise-range" id="webex-slider-gate-thresh" min="-65" max="-25" step="1" value="-45">
                         </div>
                     </div>
                 </div>
             </div>
         `;
-        document.body.appendChild(overlay);
-        return overlay;
+        document.body.appendChild(panel);
+        return panel;
     }
 
     function initWebexDenoiseUI() {
-        const overlay = ensureWebexDenoiseModal();
-        if (!overlay) return;
+        const panel = ensureWebexDenoiseModal();
+        if (!panel) return;
 
         const closeBtn = document.getElementById("webex-denoise-close");
-        const statusBadge = document.getElementById("webex-denoise-status");
+        const masterToggle = document.getElementById("webex-denoise-master-toggle");
+        const masterWrap = document.getElementById("webex-denoise-master-wrap");
+        const masterLbl = document.getElementById("webex-denoise-master-lbl");
+        const dspMasterToggle = document.getElementById("webex-denoise-dsp-master-toggle");
+
         const qaBtn = document.getElementById("webex-qa-denoise");
         const actionBtn = document.getElementById("webex-action-denoise");
 
@@ -4617,15 +4978,16 @@ if (window.WebexOfflineDB) {
             if (window.__polimiAudioEnhancer && vid) {
                 window.__polimiAudioEnhancer.attachVideo(vid);
             }
-            overlay.classList.add("is-open");
+            panel.style.setProperty("z-index", "2147483647", "important");
+            panel.classList.add("is-open");
         }
 
         function closeModal() {
-            overlay.classList.remove("is-open");
+            panel.classList.remove("is-open");
         }
 
         function toggleModal() {
-            if (overlay.classList.contains("is-open")) {
+            if (panel.classList.contains("is-open")) {
                 closeModal();
             } else {
                 openModal();
@@ -4636,10 +4998,57 @@ if (window.WebexOfflineDB) {
         if (actionBtn) actionBtn.onclick = (e) => { e.stopPropagation(); toggleModal(); };
         if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
 
-        overlay.onclick = (e) => {
-            if (e.target === overlay) closeModal();
-        };
+        // Always bring panel to top when clicked
+        panel.addEventListener("mousedown", () => {
+            panel.style.setProperty("z-index", "2147483647", "important");
+        });
 
+        // Draggable Header logic - Unrestricted movement in all 4 directions
+        const header = panel.querySelector("#webex-denoise-header");
+        let isDragging = false;
+        let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+        if (header) {
+            header.addEventListener("mousedown", (e) => {
+                if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input")) return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                const rect = panel.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+                panel.style.setProperty("z-index", "2147483647", "important");
+                e.preventDefault();
+            });
+
+            window.addEventListener("mousemove", (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const margin = 8;
+                const maxLeft = Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
+                const maxTop = Math.max(margin, window.innerHeight - panel.offsetHeight - margin);
+                const newLeft = Math.min(maxLeft, Math.max(margin, initialLeft + dx));
+                const newTop = Math.min(maxTop, Math.max(margin, initialTop + dy));
+                panel.style.setProperty("left", `${newLeft}px`, "important");
+                panel.style.setProperty("top", `${newTop}px`, "important");
+                panel.style.setProperty("right", "auto", "important");
+                panel.style.setProperty("bottom", "auto", "important");
+            });
+
+            window.addEventListener("mouseup", () => {
+                isDragging = false;
+            });
+        }
+
+        // Close on Escape key
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && panel.classList.contains("is-open")) {
+                closeModal();
+            }
+        });
+
+        // Controls
         const rnnoiseToggle = document.getElementById("webex-denoise-rnnoise-toggle");
         const hpToggle = document.getElementById("webex-denoise-highpass-toggle");
         const hpSlider = document.getElementById("webex-slider-highpass-freq");
@@ -4652,11 +5061,32 @@ if (window.WebexOfflineDB) {
         const gateVal = document.getElementById("webex-val-gate-thresh");
 
         const cardRnnoise = document.getElementById("webex-card-rnnoise");
+        const cardDsp = document.getElementById("webex-card-dsp");
         const cardHp = document.getElementById("webex-card-highpass");
         const cardLp = document.getElementById("webex-card-lowpass");
         const cardGate = document.getElementById("webex-card-gate");
 
-        const chipBtns = overlay.querySelectorAll(".webex-denoise-chip");
+        const chipBtns = panel.querySelectorAll(".webex-denoise-chip");
+
+        if (masterToggle) {
+            masterToggle.onchange = (e) => {
+                const vid = getPrimaryVideo();
+                if (window.__polimiAudioEnhancer) {
+                    if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
+                    window.__polimiAudioEnhancer.setMasterEnabled(e.target.checked);
+                }
+            };
+        }
+
+        if (dspMasterToggle) {
+            dspMasterToggle.onchange = (e) => {
+                const vid = getPrimaryVideo();
+                if (window.__polimiAudioEnhancer) {
+                    if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
+                    window.__polimiAudioEnhancer.setDspMaster(e.target.checked);
+                }
+            };
+        }
 
         if (rnnoiseToggle) {
             rnnoiseToggle.onchange = (e) => {
@@ -4673,7 +5103,7 @@ if (window.WebexOfflineDB) {
                 const vid = getPrimaryVideo();
                 if (window.__polimiAudioEnhancer) {
                     if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
-                    const freq = hpSlider ? parseFloat(hpSlider.value) : 90;
+                    const freq = hpSlider ? parseFloat(hpSlider.value) : 140;
                     window.__polimiAudioEnhancer.setHighPass(e.target.checked, freq);
                 }
             };
@@ -4694,7 +5124,7 @@ if (window.WebexOfflineDB) {
                 const vid = getPrimaryVideo();
                 if (window.__polimiAudioEnhancer) {
                     if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
-                    const freq = lpSlider ? parseFloat(lpSlider.value) : 8000;
+                    const freq = lpSlider ? parseFloat(lpSlider.value) : 4500;
                     window.__polimiAudioEnhancer.setLowPass(e.target.checked, freq);
                 }
             };
@@ -4715,7 +5145,7 @@ if (window.WebexOfflineDB) {
                 const vid = getPrimaryVideo();
                 if (window.__polimiAudioEnhancer) {
                     if (vid) window.__polimiAudioEnhancer.attachVideo(vid);
-                    const thresh = gateSlider ? parseFloat(gateSlider.value) : -45;
+                    const thresh = gateSlider ? parseFloat(gateSlider.value) : -42;
                     window.__polimiAudioEnhancer.setNoiseGate(e.target.checked, thresh);
                 }
             };
@@ -4745,43 +5175,57 @@ if (window.WebexOfflineDB) {
 
         function updateUI(settings) {
             if (!settings) return;
-            if (rnnoiseToggle) rnnoiseToggle.checked = !!settings.rnnoiseEnabled;
-            if (hpToggle) hpToggle.checked = !!settings.highpassEnabled;
-            if (hpSlider) hpSlider.value = settings.highpassFreq || 90;
-            if (hpVal) hpVal.innerText = `${settings.highpassFreq || 90} Hz`;
-            if (lpToggle) lpToggle.checked = !!settings.lowpassEnabled;
-            if (lpSlider) lpSlider.value = settings.lowpassFreq || 8000;
-            if (lpVal) lpVal.innerText = `${settings.lowpassFreq || 8000} Hz`;
-            if (gateToggle) gateToggle.checked = !!settings.noiseGateEnabled;
-            if (gateSlider) gateSlider.value = settings.noiseGateThreshold || -45;
-            if (gateVal) gateVal.innerText = `${settings.noiseGateThreshold || -45} dB`;
 
+            // Master state
+            const isMaster = !!settings.masterEnabled;
+            if (masterToggle) masterToggle.checked = isMaster;
+            if (masterWrap) masterWrap.classList.toggle("active", isMaster);
+            if (masterLbl) masterLbl.innerText = isMaster ? "ON" : "OFF";
+            panel.classList.toggle("is-master-off", !isMaster);
+
+            // DSP Master state
+            const isDspMaster = typeof settings.dspMasterEnabled !== "undefined" ? !!settings.dspMasterEnabled : true;
+            if (dspMasterToggle) dspMasterToggle.checked = isDspMaster;
+            if (cardDsp) cardDsp.classList.toggle("is-dsp-off", !isDspMaster);
+
+            // RNNoise AI
+            if (rnnoiseToggle) rnnoiseToggle.checked = !!settings.rnnoiseEnabled;
             if (cardRnnoise) cardRnnoise.classList.toggle("is-active", !!settings.rnnoiseEnabled);
+
+            // Sub DSP items
+            if (hpToggle) hpToggle.checked = !!settings.highpassEnabled;
+            if (hpSlider) hpSlider.value = settings.highpassFreq || 130;
+            if (hpVal) hpVal.innerText = `${settings.highpassFreq || 130} Hz`;
+
+            if (lpToggle) lpToggle.checked = !!settings.lowpassEnabled;
+            if (lpSlider) lpSlider.value = settings.lowpassFreq || 4800;
+            if (lpVal) lpVal.innerText = `${settings.lowpassFreq || 4800} Hz`;
+
+            if (gateToggle) gateToggle.checked = !!settings.noiseGateEnabled;
+            if (gateSlider) gateSlider.value = settings.noiseGateThreshold || -42;
+            if (gateVal) gateVal.innerText = `${settings.noiseGateThreshold || -42} dB`;
+
             if (cardHp) cardHp.classList.toggle("is-active", !!settings.highpassEnabled);
             if (cardLp) cardLp.classList.toggle("is-active", !!settings.lowpassEnabled);
             if (cardGate) cardGate.classList.toggle("is-active", !!settings.noiseGateEnabled);
 
+            // Preset chips active highlighting
             chipBtns.forEach(c => {
-                c.classList.toggle("active", c.dataset.preset === settings.preset);
+                c.classList.toggle("active", isMaster && c.dataset.preset === settings.preset);
             });
 
-            const isAnyActive = window.__polimiAudioEnhancer ? window.__polimiAudioEnhancer.isAnyFilterActive() : false;
-            if (statusBadge) {
-                if (settings.rnnoiseEnabled) {
-                    statusBadge.innerText = "🟢 Attivo (RNNoise AI)";
-                    statusBadge.style.color = "#4ade80";
-                    statusBadge.style.borderColor = "rgba(74, 222, 128, 0.4)";
-                } else if (isAnyActive) {
-                    statusBadge.innerText = "🔵 Attivo (Filtri DSP)";
-                    statusBadge.style.color = "#38bdf8";
-                    statusBadge.style.borderColor = "rgba(56, 189, 248, 0.4)";
-                } else {
-                    statusBadge.innerText = "⚪ Disattivato";
-                    statusBadge.style.color = "rgba(255, 255, 255, 0.6)";
-                    statusBadge.style.borderColor = "rgba(255, 255, 255, 0.15)";
-                }
-            }
-
+            const isAnyActive = window.__polimiAudioEnhancer ? (
+                typeof window.__polimiAudioEnhancer.hasActiveFilters === "function"
+                    ? window.__polimiAudioEnhancer.hasActiveFilters()
+                    : (window.__polimiAudioEnhancer.settings?.masterEnabled && (
+                        window.__polimiAudioEnhancer.settings?.rnnoiseEnabled || 
+                        (window.__polimiAudioEnhancer.settings?.dspMasterEnabled && (
+                            window.__polimiAudioEnhancer.settings?.highpassEnabled || 
+                            window.__polimiAudioEnhancer.settings?.lowpassEnabled || 
+                            window.__polimiAudioEnhancer.settings?.noiseGateEnabled
+                        ))
+                    ))
+            ) : false;
             const currentQaBtn = document.getElementById("webex-qa-denoise");
             const currentActionBtn = document.getElementById("webex-action-denoise");
             if (currentQaBtn) currentQaBtn.classList.toggle("active", isAnyActive);
@@ -5182,6 +5626,13 @@ if (window.WebexOfflineDB) {
         document.body.appendChild(container);
         const qaBar = container.querySelector("#webex-quick-actions-bar");
         if (qaBar) { document.body.appendChild(qaBar); repositionQuickActionsBar(); }
+        if (window.__polimiAudioEnhancer) {
+            const isFiltsActive = typeof window.__polimiAudioEnhancer.hasActiveFilters === "function" ? window.__polimiAudioEnhancer.hasActiveFilters() : false;
+            const qBtn = container.querySelector("#webex-qa-denoise") || document.getElementById("webex-qa-denoise");
+            const aBtn = container.querySelector("#webex-action-denoise") || document.getElementById("webex-action-denoise");
+            if (qBtn) qBtn.classList.toggle("active", !!isFiltsActive);
+            if (aBtn) aBtn.classList.toggle("active", !!isFiltsActive);
+        }
 
         // Toggle Expand / Collapse
         const expandBtn = qaBar ? qaBar.querySelector("#webex-qa-expand") : container.querySelector("#webex-qa-expand");
@@ -5349,36 +5800,7 @@ if (window.WebexOfflineDB) {
             panelHeader.style.cursor = "default";
         }
 
-        // Fullscreen Change: Ensure toolbar stays visible inside native fullscreen container
-        document.addEventListener("fullscreenchange", () => {
-            const fsEl = document.fullscreenElement;
-            const tb = document.getElementById("webex-helper-toolbar-container");
-            const qb = document.getElementById("webex-quick-actions-bar");
-            if (tb) {
-                if (fsEl) {
-                    fsEl.appendChild(tb);
-                    tb.style.zIndex = "2147483647";
-                } else {
-                    document.body.appendChild(tb);
-                    tb.style.zIndex = "2147483640";
-                }
-                updateToolbarPosition();
-            }
-            if (qb) {
-                if (fsEl) {
-                    fsEl.appendChild(qb);
-                    qb.style.zIndex = "2147483647";
-                } else {
-                    if (tb) {
-                        tb.insertBefore(qb, tb.firstChild);
-                    } else {
-                        document.body.appendChild(qb);
-                    }
-                    qb.style.zIndex = "2147483647";
-                }
-                repositionQuickActionsBar();
-            }
-        });
+        // Fullscreen Change: Handled by unified handleUnifiedFullscreenChange listener below
 
         // Seeking Buttons in Toolbar
         container.querySelector("#webex-seek-b30").onclick = () => seekVideo(-30);
@@ -5786,12 +6208,40 @@ if (window.WebexOfflineDB) {
         }
 
         // Open Offline Player
-        container.querySelector("#webex-btn-open-offline").onclick = () => {
-            chrome.runtime.sendMessage({
-                type: "OPEN_OFFLINE_PLAYER",
-                lectureId: getRecordingId()
-            });
-        };
+        const btnOpenOffline = container.querySelector("#webex-btn-open-offline");
+        if (btnOpenOffline) {
+            btnOpenOffline.onclick = () => {
+                const reloadMsg = "L'estensione è stata aggiornata. Ricarica la pagina per aprire il player offline.";
+                if (!Boolean(chrome.runtime?.id)) {
+                    alert(reloadMsg);
+                    return;
+                }
+                try {
+                    chrome.runtime.sendMessage(
+                        {
+                            type: "OPEN_OFFLINE_PLAYER",
+                            lectureId: getRecordingId()
+                        },
+                        () => {
+                            if (chrome.runtime?.lastError) {
+                                const errStr = chrome.runtime.lastError.message || "";
+                                if (errStr.includes("context invalidated") || !Boolean(chrome.runtime?.id)) {
+                                    alert(reloadMsg);
+                                } else {
+                                    console.warn("[PoliMi Webex] Open offline player note:", errStr);
+                                }
+                            }
+                        }
+                    );
+                } catch (e) {
+                    if (e.message?.includes("Extension context invalidated") || !Boolean(chrome.runtime?.id)) {
+                        alert(reloadMsg);
+                    } else {
+                        console.error("[PoliMi Webex] Error opening offline player:", e);
+                    }
+                }
+            };
+        }
 
         // Save MP4 to Disk
         container.querySelector("#webex-btn-save-mp4").onclick = downloadFullMp4;
@@ -5863,7 +6313,7 @@ if (window.WebexOfflineDB) {
             return;
         }
 
-        const openDenoise = document.getElementById("webex-denoise-overlay");
+        const openDenoise = document.getElementById("webex-denoise-panel");
         if (openDenoise && openDenoise.classList.contains("is-open")) {
             if (event.key === "Escape") {
                 openDenoise.classList.remove("is-open");
@@ -6348,8 +6798,16 @@ if (window.WebexOfflineDB) {
         if (debounceTimer) return;
         debounceTimer = setTimeout(() => {
             debounceTimer = null;
-            if (!document.getElementById("webex-helper-toolbar-container") || !document.getElementById("webex-native-btn-minus-30")) {
+            const tbMissing = !document.getElementById("webex-helper-toolbar-container");
+            const qbMissing = !document.getElementById("webex-quick-actions-bar");
+            const nativeMissing = !document.getElementById("webex-native-btn-minus-30");
+
+            if (tbMissing || nativeMissing) {
                 initVideoHooks();
+            } else if (qbMissing) {
+                repositionQuickActionsBar();
+            } else {
+                repositionQuickActionsBar();
             }
         }, 800);
     });

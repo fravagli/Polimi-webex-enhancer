@@ -1,14 +1,48 @@
 /**
  * IndexedDB storage for offline Webex & SharePoint lectures.
- * Supports custom course folders, sorting, PC folder handle persistence, and metadata.
+ * Supports custom course folders, sorting, PC folder handle persistence,
+ * isolated lightweight metadata caching, and high-performance querying.
  */
 
 const WebexOfflineDB = (function () {
     const DB_NAME = "WebexOfflineDB";
-    const DB_VERSION = 4;
+    const DB_VERSION = 5;
     const STORE_NAME = "lectures";
+    const METADATA_STORE = "lectures_meta";
     const FOLDER_STORE = "folders";
     const SETTINGS_STORE = "settings";
+
+    // In-memory session cache for instant, zero-I/O querying (< 1ms)
+    let _metadataCache = null;
+    let _foldersCache = null;
+
+    function extractMetadata(item) {
+        if (!item || !item.id) return null;
+        return {
+            id: item.id,
+            title: item.title || item.id,
+            originalTitle: item.originalTitle || item.title || item.id,
+            url: item.url || "",
+            webexUrl: item.webexUrl || item.url || "",
+            webexRecordingId: item.webexRecordingId || (item.id.startsWith("mirror_") ? "" : item.id),
+            size: item.size || 0,
+            duration: item.duration || 0,
+            bufferedPercent: item.bufferedPercent || 100,
+            date: item.date || new Date().toISOString(),
+            folder: (item.folder && item.folder !== "Generale") ? item.folder : "",
+            isLocalMirror: !!item.isLocalMirror,
+            fileName: item.fileName || (item.fileHandle ? item.fileHandle.name : null),
+            fileHandle: item.fileHandle || null,
+            hasSubtitles: !!(item.subtitlesData || item.transcript || item.subtitles),
+            hasBookmarks: !!(item.bookmarks && item.bookmarks.length > 0),
+            hasNotes: !!(item.notes && item.notes.length > 0)
+        };
+    }
+
+    function invalidateCache() {
+        _metadataCache = null;
+        _foldersCache = null;
+    }
 
     function openDB() {
         return new Promise((resolve, reject) => {
@@ -31,6 +65,30 @@ const WebexOfflineDB = (function () {
                 }
                 if (!store.indexNames.contains("by_folder")) {
                     store.createIndex("by_folder", "folder", { unique: false });
+                }
+
+                // Dedicated lightweight metadata store (stores NO Blobs, NO Transcripts)
+                let metaStore;
+                if (!db.objectStoreNames.contains(METADATA_STORE)) {
+                    metaStore = db.createObjectStore(METADATA_STORE, { keyPath: "id" });
+                    metaStore.createIndex("by_folder", "folder", { unique: false });
+                    metaStore.createIndex("by_date", "date", { unique: false });
+                    metaStore.createIndex("by_title", "title", { unique: false });
+
+                    // Initial migration: populate metadata from existing STORE_NAME
+                    if (db.objectStoreNames.contains(STORE_NAME)) {
+                        try {
+                            const lStore = tx.objectStore(STORE_NAME);
+                            lStore.openCursor().onsuccess = (ev) => {
+                                const cursor = ev.target.result;
+                                if (cursor) {
+                                    const m = extractMetadata(cursor.value);
+                                    if (m) metaStore.put(m);
+                                    cursor.continue();
+                                }
+                            };
+                        } catch (_) {}
+                    }
                 }
 
                 if (!db.objectStoreNames.contains(FOLDER_STORE)) {
@@ -61,12 +119,14 @@ const WebexOfflineDB = (function () {
     }
 
     async function saveLecture(data) {
+        invalidateCache();
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction([STORE_NAME, FOLDER_STORE], "readwrite");
+            const tx = db.transaction([STORE_NAME, METADATA_STORE, FOLDER_STORE], "readwrite");
             tx.onabort = (e) => reject(tx.error || new Error("Transaction aborted"));
             tx.onerror = (e) => reject(tx.error || e.target.error);
             const store = tx.objectStore(STORE_NAME);
+            const metaStore = tx.objectStore(METADATA_STORE);
             const folderStore = tx.objectStore(FOLDER_STORE);
 
             // Clean folder name - default is empty (belongs to all lectures)
@@ -118,11 +178,15 @@ const WebexOfflineDB = (function () {
                     }
                 }
                 const req = store.put(toSave);
+                const meta = extractMetadata(toSave);
+                if (meta) metaStore.put(meta);
                 req.onsuccess = () => resolve(true);
                 req.onerror = (e) => reject(e.target.error);
             };
             getReq.onerror = () => {
                 const req = store.put(data);
+                const meta = extractMetadata(data);
+                if (meta) metaStore.put(meta);
                 req.onsuccess = () => resolve(true);
                 req.onerror = (e) => reject(e.target.error);
             };
@@ -131,10 +195,12 @@ const WebexOfflineDB = (function () {
 
     async function deleteSubtitles(id) {
         if (!id) return false;
+        invalidateCache();
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
+            const tx = db.transaction([STORE_NAME, METADATA_STORE], "readwrite");
             const store = tx.objectStore(STORE_NAME);
+            const metaStore = tx.objectStore(METADATA_STORE);
             const getReq = store.get(id);
             getReq.onsuccess = () => {
                 const item = getReq.result;
@@ -146,9 +212,10 @@ const WebexOfflineDB = (function () {
                 delete item.transcript;
                 delete item.subtitles;
                 item.clearSubtitles = true;
-                const putReq = store.put(item);
-                putReq.onsuccess = () => resolve(true);
-                putReq.onerror = (e) => reject(e.target.error);
+                store.put(item);
+                const meta = extractMetadata(item);
+                if (meta) metaStore.put(meta);
+                resolve(true);
             };
             getReq.onerror = () => resolve(false);
         });
@@ -181,81 +248,113 @@ const WebexOfflineDB = (function () {
         });
     }
 
+    function filterAndSort(results, folderFilter, sortBy, sortOrder) {
+        if (folderFilter && folderFilter !== "all" && folderFilter !== "Tutte") {
+            results = results.filter(item => {
+                if (!item.folder) return false;
+                return item.folder === folderFilter || item.folder.startsWith(folderFilter + "/");
+            });
+        }
+
+        results.sort((a, b) => {
+            let cmp = 0;
+            if (sortBy === "name" || sortBy === "title") {
+                cmp = (a.title || a.id).localeCompare(b.title || b.id, undefined, { numeric: true, sensitivity: 'base' });
+            } else if (sortBy === "size") {
+                cmp = (a.size || 0) - (b.size || 0);
+            } else if (sortBy === "duration") {
+                cmp = (a.duration || 0) - (b.duration || 0);
+            } else { // date (default)
+                cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
+            }
+            return sortOrder === "desc" ? -cmp : cmp;
+        });
+
+        return results;
+    }
+
     async function listLectures(folderFilter = null, sortBy = "date", sortOrder = "desc") {
+        // Fast Path 1: Check in-memory session cache (< 0.5ms)
+        if (_metadataCache && Array.isArray(_metadataCache)) {
+            return filterAndSort([..._metadataCache], folderFilter, sortBy, sortOrder);
+        }
+
         const db = await openDB();
+        return new Promise((resolve, reject) => {
+            // Fast Path 2: Read from lightweight METADATA_STORE (NO Blobs, NO heavy I/O!)
+            const tx = db.transaction(METADATA_STORE, "readonly");
+            const metaStore = tx.objectStore(METADATA_STORE);
+            const req = metaStore.getAll();
+
+            req.onsuccess = (e) => {
+                let rawList = e.target.result || [];
+                if (rawList.length === 0) {
+                    // Fallback for upgrade transition: read from STORE_NAME and populate
+                    fallbackReadFromStore(db).then(migrated => {
+                        _metadataCache = migrated;
+                        resolve(filterAndSort([...migrated], folderFilter, sortBy, sortOrder));
+                    }).catch(reject);
+                    return;
+                }
+
+                let results = rawList
+                    .filter(item => !!(item && item.id && (item.fileHandle || (item.size && item.size > 0) || item.isLocalMirror || item.title || item.webexRecordingId)))
+                    .map(item => extractMetadata(item));
+
+                _metadataCache = results;
+                resolve(filterAndSort([...results], folderFilter, sortBy, sortOrder));
+            };
+
+            req.onerror = () => {
+                fallbackReadFromStore(db).then(migrated => {
+                    _metadataCache = migrated;
+                    resolve(filterAndSort([...migrated], folderFilter, sortBy, sortOrder));
+                }).catch(reject);
+            };
+        });
+    }
+
+    function fallbackReadFromStore(db) {
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
             const store = tx.objectStore(STORE_NAME);
             const req = store.getAll();
             req.onsuccess = (e) => {
-                let rawList = e.target.result || [];
-                let results = rawList
-                    .filter(item => !!(item && item.id && (item.blob || item.fileHandle || (item.size && item.size > 0) || item.isLocalMirror || item.title || item.webexRecordingId)))
-                    .map(item => ({
-                        id: item.id,
-                        title: item.title,
-                        url: item.url,
-                        size: item.size || 0,
-                        duration: item.duration || 0,
-                        bufferedPercent: item.bufferedPercent || 100,
-                        date: item.date || new Date().toISOString(),
-                        folder: (item.folder && item.folder !== "Generale") ? item.folder : "",
-                        isLocalMirror: !!item.isLocalMirror,
-                        fileHandle: item.fileHandle || null
-                    }));
-
-                // Filter by folder if specified and not "Tutte" / "all"
-                if (folderFilter && folderFilter !== "all" && folderFilter !== "Tutte") {
-                    results = results.filter(item => {
-                        if (!item.folder) return false;
-                        return item.folder === folderFilter || item.folder.startsWith(folderFilter + "/");
-                    });
-                }
-
-                // Sorting
-                results.sort((a, b) => {
-                    let cmp = 0;
-                    if (sortBy === "name" || sortBy === "title") {
-                        cmp = (a.title || a.id).localeCompare(b.title || b.id, undefined, { numeric: true, sensitivity: 'base' });
-                    } else if (sortBy === "size") {
-                        cmp = (a.size || 0) - (b.size || 0);
-                    } else if (sortBy === "duration") {
-                        cmp = (a.duration || 0) - (b.duration || 0);
-                    } else { // date (default)
-                        cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
-                    }
-                    return sortOrder === "desc" ? -cmp : cmp;
-                });
-
-                resolve(results);
+                const raw = e.target.result || [];
+                const res = raw
+                    .filter(item => !!(item && item.id && (item.fileHandle || (item.size && item.size > 0) || item.isLocalMirror || item.title || item.webexRecordingId)))
+                    .map(item => extractMetadata(item));
+                resolve(res);
             };
             req.onerror = (e) => reject(e.target.error);
         });
     }
 
     async function deleteLecture(id) {
+        invalidateCache();
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            const store = tx.objectStore(STORE_NAME);
-            const req = store.delete(id);
-            req.onsuccess = () => resolve(true);
-            req.onerror = (e) => reject(e.target.error);
+            const tx = db.transaction([STORE_NAME, METADATA_STORE], "readwrite");
+            tx.objectStore(STORE_NAME).delete(id);
+            tx.objectStore(METADATA_STORE).delete(id);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = (e) => reject(e.target.error);
         });
     }
 
     async function moveLecture(id, newFolder) {
+        invalidateCache();
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction([STORE_NAME, FOLDER_STORE], "readwrite");
+            const tx = db.transaction([STORE_NAME, METADATA_STORE, FOLDER_STORE], "readwrite");
             const store = tx.objectStore(STORE_NAME);
+            const metaStore = tx.objectStore(METADATA_STORE);
             const folderStore = tx.objectStore(FOLDER_STORE);
 
             const raw = newFolder ? newFolder.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : "";
             const folder = (raw && raw !== "Generale") ? raw : "";
 
             if (folder) {
-                // Ensure all hierarchy segments exist in folderStore
                 const parts = folder.split('/');
                 let acc = '';
                 for (const p of parts) {
@@ -273,6 +372,8 @@ const WebexOfflineDB = (function () {
                 }
                 item.folder = folder;
                 store.put(item);
+                const meta = extractMetadata(item);
+                if (meta) metaStore.put(meta);
                 resolve(true);
             };
             getReq.onerror = (e) => reject(e.target.error);
@@ -280,11 +381,16 @@ const WebexOfflineDB = (function () {
     }
 
     async function getFolders() {
+        if (_foldersCache && Array.isArray(_foldersCache)) {
+            return [..._foldersCache];
+        }
+
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction([STORE_NAME, FOLDER_STORE], "readonly");
+            // Read from FOLDER_STORE and lightweight METADATA_STORE (NEVER from STORE_NAME!)
+            const tx = db.transaction([FOLDER_STORE, METADATA_STORE], "readonly");
             const fStore = tx.objectStore(FOLDER_STORE);
-            const lStore = tx.objectStore(STORE_NAME);
+            const mStore = tx.objectStore(METADATA_STORE);
 
             const set = new Set();
 
@@ -303,9 +409,9 @@ const WebexOfflineDB = (function () {
                     }
                 });
 
-                const lReq = lStore.getAll();
-                lReq.onsuccess = () => {
-                    (lReq.result || []).forEach(l => {
+                const mReq = mStore.getAll();
+                mReq.onsuccess = () => {
+                    (mReq.result || []).forEach(l => {
                         if (l.folder && l.folder.trim() && l.folder !== "Generale") {
                             const cleanF = l.folder.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
                             set.add(cleanF);
@@ -317,9 +423,15 @@ const WebexOfflineDB = (function () {
                             }
                         }
                     });
-                    resolve(Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })));
+                    const res = Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    _foldersCache = res;
+                    resolve(res);
                 };
-                lReq.onerror = () => resolve(Array.from(set).sort());
+                mReq.onerror = () => {
+                    const res = Array.from(set).sort();
+                    _foldersCache = res;
+                    resolve(res);
+                };
             };
             fReq.onerror = (e) => reject(e.target.error);
         });
@@ -327,13 +439,13 @@ const WebexOfflineDB = (function () {
 
     async function createFolder(name) {
         if (!name || !name.trim()) return false;
+        invalidateCache();
         const clean = name.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
         if (!clean || clean === "Generale") return false;
         const db = await openDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(FOLDER_STORE, "readwrite");
             const store = tx.objectStore(FOLDER_STORE);
-            // Ensure all parent levels are stored
             const parts = clean.split('/');
             let acc = '';
             for (const p of parts) {
@@ -347,11 +459,13 @@ const WebexOfflineDB = (function () {
 
     async function deleteFolder(folderName) {
         if (!folderName || folderName === "Generale") return false;
+        invalidateCache();
         const cleanTarget = folderName.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction([STORE_NAME, FOLDER_STORE], "readwrite");
+            const tx = db.transaction([STORE_NAME, METADATA_STORE, FOLDER_STORE], "readwrite");
             const lStore = tx.objectStore(STORE_NAME);
+            const mStore = tx.objectStore(METADATA_STORE);
             const fStore = tx.objectStore(FOLDER_STORE);
 
             tx.oncomplete = () => resolve(true);
@@ -369,16 +483,23 @@ const WebexOfflineDB = (function () {
                 });
 
                 // Reset lectures in this folder or its subfolders to parent or root
-                const lReq = lStore.getAll();
-                lReq.onsuccess = () => {
-                    const list = lReq.result || [];
+                const mReq = mStore.getAll();
+                mReq.onsuccess = () => {
+                    const list = mReq.result || [];
                     list.forEach(item => {
                         const iFolder = (item.folder || "").replace(/\\/g, '/');
                         if (iFolder === cleanTarget || iFolder.startsWith(cleanTarget + "/")) {
-                            // Reset to parent folder if parent exists, else root ""
                             const parent = cleanTarget.includes('/') ? cleanTarget.substring(0, cleanTarget.lastIndexOf('/')) : "";
                             item.folder = parent;
-                            lStore.put(item);
+                            mStore.put(item);
+                            // Also update heavy store
+                            const getL = lStore.get(item.id);
+                            getL.onsuccess = () => {
+                                if (getL.result) {
+                                    getL.result.folder = parent;
+                                    lStore.put(getL.result);
+                                }
+                            };
                         }
                     });
                 };
@@ -386,7 +507,6 @@ const WebexOfflineDB = (function () {
         });
     }
 
-    // Persist key-value settings (e.g. FileSystemDirectoryHandle for linked PC folder)
     async function saveSetting(key, val) {
         const db = await openDB();
         return new Promise((resolve, reject) => {
@@ -420,15 +540,15 @@ const WebexOfflineDB = (function () {
         });
     }
 
-    // =========================================================================
-    // Unified Notes & Bookmarks Persistence (Shared between Webex & Offline)
-    // =========================================================================
+    // Unified Notes & Bookmarks Persistence
     async function saveNotes(lectureId, notes) {
         if (!lectureId) return false;
+        invalidateCache();
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
+            const tx = db.transaction([STORE_NAME, METADATA_STORE], "readwrite");
             const store = tx.objectStore(STORE_NAME);
+            const metaStore = tx.objectStore(METADATA_STORE);
             const req = store.get(lectureId);
             req.onsuccess = () => {
                 let item = req.result;
@@ -438,9 +558,10 @@ const WebexOfflineDB = (function () {
                     item.notes = notes;
                     item.updatedAt = Date.now();
                 }
-                const putReq = store.put(item);
-                putReq.onsuccess = () => resolve(true);
-                putReq.onerror = (e) => reject(e.target.error);
+                store.put(item);
+                const meta = extractMetadata(item);
+                if (meta) metaStore.put(meta);
+                resolve(true);
             };
             req.onerror = (e) => reject(e.target.error);
         });
@@ -463,10 +584,12 @@ const WebexOfflineDB = (function () {
 
     async function saveBookmarks(lectureId, bookmarks) {
         if (!lectureId) return false;
+        invalidateCache();
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
+            const tx = db.transaction([STORE_NAME, METADATA_STORE], "readwrite");
             const store = tx.objectStore(STORE_NAME);
+            const metaStore = tx.objectStore(METADATA_STORE);
             const req = store.get(lectureId);
             req.onsuccess = () => {
                 let item = req.result;
@@ -476,9 +599,10 @@ const WebexOfflineDB = (function () {
                     item.bookmarks = bookmarks;
                     item.updatedAt = Date.now();
                 }
-                const putReq = store.put(item);
-                putReq.onsuccess = () => resolve(true);
-                putReq.onerror = (e) => reject(e.target.error);
+                store.put(item);
+                const meta = extractMetadata(item);
+                if (meta) metaStore.put(meta);
+                resolve(true);
             };
             req.onerror = (e) => reject(e.target.error);
         });
@@ -519,7 +643,6 @@ const WebexOfflineDB = (function () {
                         return;
                     }
 
-                    // Try index by_webexRecordingId if available
                     if (store.indexNames.contains("by_webexRecordingId")) {
                         const idxReq = store.index("by_webexRecordingId").get(query.recordingId);
                         idxReq.onsuccess = async () => {
@@ -549,7 +672,6 @@ const WebexOfflineDB = (function () {
                 req.onsuccess = async (e) => {
                     const list = e.target.result || [];
 
-                    // 1. Direct ID match
                     if (query.recordingId) {
                         const match = list.find(item => 
                             item.id === query.recordingId || 
@@ -564,7 +686,6 @@ const WebexOfflineDB = (function () {
                         }
                     }
 
-                    // 2. Webex canonical URL match
                     if (query.pageUrl) {
                         const cleanQ = query.pageUrl.split('?')[0].split('#')[0].toLowerCase();
                         const match = list.find(item => {
@@ -580,7 +701,6 @@ const WebexOfflineDB = (function () {
                         }
                     }
 
-                    // 3. Normalized Title / Recording Name match (handles rename or moved files)
                     if (query.pageTitle) {
                         const normalize = (s) => (s || '')
                             .toLowerCase()
@@ -620,12 +740,12 @@ const WebexOfflineDB = (function () {
     }
 
     async function clearAllLecturesAndTranscripts() {
+        invalidateCache();
         const db = await openDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction([STORE_NAME, FOLDER_STORE], "readwrite");
+            const tx = db.transaction([STORE_NAME, METADATA_STORE, FOLDER_STORE], "readwrite");
             tx.oncomplete = () => {
-                console.log("[WebexOfflineDB] Purged all lectures and course folders from IndexedDB.");
-                // Also clean up transcription and lecture cache in localStorage
+                console.log("[WebexOfflineDB] Purged all lectures, metadata, and course folders from IndexedDB.");
                 try {
                     for (let i = localStorage.length - 1; i >= 0; i--) {
                         const k = localStorage.key(i);
@@ -646,6 +766,7 @@ const WebexOfflineDB = (function () {
             tx.onerror = (e) => reject(tx.error || e.target.error);
             try {
                 tx.objectStore(STORE_NAME).clear();
+                tx.objectStore(METADATA_STORE).clear();
                 tx.objectStore(FOLDER_STORE).clear();
             } catch (err) {
                 reject(err);
@@ -671,7 +792,8 @@ const WebexOfflineDB = (function () {
         getNotes,
         saveBookmarks,
         getBookmarks,
-        clearAllLecturesAndTranscripts
+        clearAllLecturesAndTranscripts,
+        invalidateCache
     };
 })();
 

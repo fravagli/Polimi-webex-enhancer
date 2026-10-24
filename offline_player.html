@@ -840,7 +840,83 @@
     </div>
 
     <!-- In-Page Custom File Explorer Modal (iOS Liquid Glass File Manager) -->
-    <div class="webex-explorer-modal-overlay" id="offline-explorer-modal" style="display: none;">
+        <!-- Transcription Export Modal (Liquid Glass) -->
+    <div class="webex-export-modal-overlay" id="offline-export-modal" style="display: none;">
+        <div class="webex-export-modal">
+            <div class="webex-export-header">
+                <div class="webex-export-header-title">
+                    <span style="font-size: 20px;">📄</span>
+                    <div>
+                        <h3>Esporta Trascrizione</h3>
+                        <p>Personalizza formato, timestamp e layout del testo</p>
+                    </div>
+                </div>
+                <button class="webex-helper-close-btn" id="offline-export-close" title="Chiudi (Esc)">✕</button>
+            </div>
+            <div class="webex-export-body">
+                <!-- 1. Formato File -->
+                <div class="webex-export-section">
+                    <div class="webex-export-label">
+                        <span>Formato Esportazione</span>
+                        <span id="offline-export-ext-badge" style="font-size: 10px; color: #38bdf8; text-transform: none; font-weight: 600;">.txt</span>
+                    </div>
+                    <div class="webex-export-seg-control" id="offline-export-format-group">
+                        <button type="button" class="webex-export-seg-btn active" data-format="txt">TXT (Testo)</button>
+                        <button type="button" class="webex-export-seg-btn" data-format="srt">SRT (Sottotitoli)</button>
+                        <button type="button" class="webex-export-seg-btn" data-format="json">JSON (Dati)</button>
+                    </div>
+                </div>
+
+                <!-- 2. Timestamp Toggle -->
+                <div class="webex-export-section" id="offline-export-ts-section">
+                    <label class="webex-export-toggle-card" id="offline-export-toggle-ts-card">
+                        <div class="webex-export-toggle-info">
+                            <span class="webex-export-toggle-title">Includi Timestamp</span>
+                            <span class="webex-export-toggle-desc" id="offline-export-ts-desc">Aggiunge [00:12:34] all'inizio di ogni frase</span>
+                        </div>
+                        <div class="webex-export-switch">
+                            <input type="checkbox" id="offline-export-chk-timestamps" checked>
+                            <span class="webex-export-slider"></span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 3. Formattazione Linee -->
+                <div class="webex-export-section" id="offline-export-lines-section">
+                    <div class="webex-export-label">
+                        <span>Struttura Frasi</span>
+                    </div>
+                    <div class="webex-export-seg-control" id="offline-export-lines-group">
+                        <button type="button" class="webex-export-seg-btn active" data-lines="newline">↵ A capo per frase</button>
+                        <button type="button" class="webex-export-seg-btn" data-lines="continuous">▤ Testo continuo</button>
+                    </div>
+                </div>
+
+                <!-- 4. Real-time Preview -->
+                <div class="webex-export-section">
+                    <div class="webex-export-label">
+                        <span>Anteprima</span>
+                        <span id="offline-export-cue-count" style="font-size: 10px; color: #94a3b8; text-transform: none; font-weight: 500;">0 segmenti</span>
+                    </div>
+                    <div class="webex-export-preview-box" id="offline-export-preview">
+                        Caricamento anteprima...
+                    </div>
+                </div>
+            </div>
+            <div class="webex-export-footer">
+                <button type="button" class="webex-export-btn-secondary" id="offline-export-btn-copy">
+                    <span class="icon">📋</span>
+                    <span id="offline-export-copy-label">Copia negli Appunti</span>
+                </button>
+                <button type="button" class="webex-export-btn-primary" id="offline-export-btn-download">
+                    <span class="icon">💾</span>
+                    <span id="offline-export-dl-label">Scarica File (.txt)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<div class="webex-explorer-modal-overlay" id="offline-explorer-modal" style="display: none;">
         <div class="webex-explorer-modal">
             <!-- Modal Header -->
             <div class="webex-explorer-header">
@@ -879,21 +955,21 @@
                 <section class="webex-explorer-content">
                     <!-- Toolbar -->
                     <div class="webex-explorer-toolbar">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span id="explorer-current-folder-title" style="font-size: 13px; font-weight: 700; color: #38bdf8;">📁 Tutte le lezioni</span>
+                        <div class="webex-explorer-toolbar-left">
+                            <span id="explorer-current-folder-title">📁 Tutte le lezioni</span>
                             <span id="explorer-lecture-count-badge" style="font-size: 11px; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 6px; color: #94a3b8;">0</span>
                         </div>
 
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <input type="text" id="explorer-search-input" placeholder="🔍 Cerca lezione..." style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 5px 10px; font-size: 11.5px; color: #f1f5f9; outline: none; width: 170px;">
+                        <div class="webex-explorer-toolbar-right">
+                            <input type="text" id="explorer-search-input" placeholder="🔍 Cerca lezione..." style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 5px 10px; font-size: 11.5px; color: #f1f5f9; outline: none;">
                             
                             <select id="explorer-sort-select" class="webex-explorer-sort-select">
-                                <option value="date_desc">📅 Più recenti prima</option>
-                                <option value="date_asc">📅 Meno recenti prima</option>
+                                <option value="date_desc">⏱️ Più recenti prima</option>
+                                <option value="date_asc">⏱️ Meno recenti prima</option>
                                 <option value="name_asc">🔤 Nome (A - Z)</option>
                                 <option value="name_desc">🔤 Nome (Z - A)</option>
                                 <option value="size_desc">💾 Dimensione (Maggiore)</option>
-                                <option value="duration_desc">⏱️ Durata (Più lunga)</option>
+                                <option value="duration_desc">⏳ Durata (Più lunga)</option>
                             </select>
 
                             <button id="btn-purge-library" title="Svuota completamente la libreria (cancella registrazioni e trascrizioni locali)" style="padding: 5px 9px; font-size: 11px; font-weight: 600; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; border-radius: 8px; cursor: pointer; transition: all 0.15s ease;">🗑️ Svuota</button>
@@ -909,120 +985,146 @@
         </div>
     </div>
 
-    <!-- Denoise & Audio Filters Modal -->
-    <div class="webex-denoise-overlay" id="offline-denoise-overlay" style="display: none;">
-        <div class="webex-denoise-modal" id="offline-denoise-modal">
-            <!-- Header -->
-            <div class="webex-denoise-header">
-                <div class="webex-denoise-title-box">
-                    <span class="webex-denoise-icon">🎙️</span>
-                    <div>
-                        <h3 class="webex-denoise-title">Pulizia Audio & Rimozione Rumore</h3>
-                        <p class="webex-denoise-subtitle">Filtri DSP in tempo reale e soppressione neurale RNNoise (WASM)</p>
-                    </div>
+    <!-- Denoise & Audio Filters Floating Liquid Glass Panel -->
+    <div class="webex-denoise-panel" id="offline-denoise-panel" style="display: none;">
+        <!-- Header (Draggable) -->
+        <div class="webex-denoise-header" id="offline-denoise-header">
+            <div class="webex-denoise-title-box">
+                <span class="webex-denoise-icon">🎙️</span>
+                <div>
+                    <h3 class="webex-denoise-title">Filtri & Pulizia Audio</h3>
+                    <p class="webex-denoise-subtitle">DSP in tempo reale & Rete Neurale</p>
                 </div>
-                <div class="webex-denoise-header-actions">
-                    <span class="webex-denoise-status-badge" id="offline-denoise-status">⚪ Disattivato</span>
-                    <button type="button" class="webex-denoise-close-btn" id="offline-denoise-close" title="Chiudi (Esc)">✕</button>
+            </div>
+            <div class="webex-denoise-header-actions">
+                <div class="webex-denoise-master-wrap" id="offline-denoise-master-wrap" title="Attiva/Disattiva tutti i miglioramenti audio">
+                    <span class="webex-denoise-master-label" id="offline-denoise-master-lbl">OFF</span>
+                    <label class="webex-denoise-switch webex-denoise-switch-master">
+                        <input type="checkbox" id="offline-denoise-master-toggle">
+                        <span class="webex-denoise-slider"></span>
+                    </label>
+                </div>
+                <button type="button" class="webex-denoise-close-btn" id="offline-denoise-close" title="Chiudi (Esc)">✕</button>
+            </div>
+        </div>
+
+        <!-- Presets Row -->
+        <div class="webex-denoise-presets-box">
+            <span class="webex-denoise-presets-label">Preset:</span>
+            <div class="webex-denoise-presets-chips">
+                <button type="button" class="webex-denoise-chip" data-preset="clear_voice" title="RNNoise AI + Anti-Ronzio 130Hz + De-Hiss 5kHz">⚡ Voce Chiara (Consigliato)</button>
+                <button type="button" class="webex-denoise-chip" data-preset="noisy_room" title="RNNoise AI + Anti-Ronzio 160Hz + De-Hiss 4.2kHz + Noise Gate">💨 Aula Rumorosa</button>
+                <button type="button" class="webex-denoise-chip" data-preset="light_filters" title="Solo filtri DSP passa-alto e passa-basso senza AI">🧼 Solo Filtri</button>
+            </div>
+        </div>
+
+        <!-- Sections Body -->
+        <div class="webex-denoise-body">
+            <!-- 1. RNNoise AI (Hero Section) -->
+            <div class="webex-denoise-section-ai" id="offline-card-rnnoise">
+                <div class="webex-denoise-card-header">
+                    <div class="webex-denoise-card-info">
+                        <div class="webex-denoise-card-title">
+                            <span class="webex-denoise-section-icon">🧠</span>
+                            <span>Soppressione Neurale AI</span>
+                            <span class="webex-denoise-pill ai-pill">RNNoise 48kHz</span>
+                        </div>
+                        <p class="webex-denoise-card-desc">Isola la voce del docente tramite deep learning ed elimina rumori d'aula, ventole e rimbombi.</p>
+                    </div>
+                    <label class="webex-denoise-switch">
+                        <input type="checkbox" id="offline-denoise-rnnoise-toggle">
+                        <span class="webex-denoise-slider"></span>
+                    </label>
                 </div>
             </div>
 
-            <!-- Presets Row -->
-            <div class="webex-denoise-presets-box">
-                <span class="webex-denoise-presets-label">Preset Rapidi:</span>
-                <div class="webex-denoise-presets-chips">
-                    <button type="button" class="webex-denoise-chip" data-preset="clear_voice" title="RNNoise + Anti-Ronzio 95Hz + De-Hiss 8.5kHz">⚡ Voce Chiara (Consigliato)</button>
-                    <button type="button" class="webex-denoise-chip" data-preset="noisy_room" title="RNNoise + Anti-Ronzio 120Hz + Noise Gate attivo">💨 Aula Rumorosa / Ventole</button>
-                    <button type="button" class="webex-denoise-chip" data-preset="light_filters" title="Solo filtri passa-alto e passa-basso senza AI">🧼 Solo Filtri</button>
-                    <button type="button" class="webex-denoise-chip reset" data-preset="reset" title="Disattiva tutti i filtri">🔄 Originale</button>
-                </div>
-            </div>
-
-            <!-- Sections Body -->
-            <div class="webex-denoise-body">
-                <!-- 1. RNNoise AI -->
-                <div class="webex-denoise-card" id="offline-card-rnnoise">
-                    <div class="webex-denoise-card-header">
-                        <div class="webex-denoise-card-info">
-                            <div class="webex-denoise-card-title">
-                                <span>🧠 Soppressione Rumore Neurale (RNNoise AI)</span>
-                                <span class="webex-denoise-pill">Rete Neurale 48kHz</span>
-                            </div>
-                            <p class="webex-denoise-card-desc">Isola la voce del docente rimuovendo fruscii continui, rimbombi d'aula e ventole del proiettore.</p>
+            <!-- 2. DSP Master Section -->
+            <div class="webex-denoise-section-dsp" id="offline-card-dsp">
+                <div class="webex-denoise-dsp-master-header">
+                    <div class="webex-denoise-dsp-master-title">
+                        <span class="webex-denoise-section-icon">🎚️</span>
+                        <div>
+                            <span class="webex-denoise-group-name">Filtri Audio DSP</span>
+                            <span class="webex-denoise-group-sub">Tagli di frequenza e silenziamento dinamico</span>
                         </div>
-                        <label class="webex-denoise-switch">
-                            <input type="checkbox" id="offline-denoise-rnnoise-toggle">
+                    </div>
+                    <div class="webex-denoise-dsp-toggle-box" title="Attiva/Disattiva tutti i 3 filtri DSP insieme">
+                        <span class="webex-denoise-sub-label">Tutti i filtri</span>
+                        <label class="webex-denoise-switch webex-denoise-switch-sm">
+                            <input type="checkbox" id="offline-denoise-dsp-master-toggle" checked>
                             <span class="webex-denoise-slider"></span>
                         </label>
                     </div>
                 </div>
 
-                <!-- 2. High-Pass Filter (Anti-Ronzio) -->
-                <div class="webex-denoise-card" id="offline-card-highpass">
-                    <div class="webex-denoise-card-header">
-                        <div class="webex-denoise-card-info">
-                            <div class="webex-denoise-card-title">
-                                <span>⚡ Filtro Anti-Ronzio (High-Pass)</span>
+                <div class="webex-denoise-dsp-items">
+                    <!-- High-Pass Filter (Anti-Ronzio) -->
+                    <div class="webex-denoise-dsp-item" id="offline-card-highpass">
+                        <div class="webex-denoise-item-row">
+                            <div class="webex-denoise-item-info">
+                                <div class="webex-denoise-item-title">
+                                    <span>⚡ Anti-Ronzio (High-Pass 24dB)</span>
+                                </div>
+                                <p class="webex-denoise-item-desc">Taglia ronzii a 50Hz, colpi su cattedra e rombi a bassa frequenza.</p>
                             </div>
-                            <p class="webex-denoise-card-desc">Taglia i ronzii elettrici dell'impianto audio (50/60 Hz), colpi sulla cattedra e rombi a bassa frequenza.</p>
+                            <label class="webex-denoise-switch webex-denoise-switch-sm">
+                                <input type="checkbox" id="offline-denoise-highpass-toggle">
+                                <span class="webex-denoise-slider"></span>
+                            </label>
                         </div>
-                        <label class="webex-denoise-switch">
-                            <input type="checkbox" id="offline-denoise-highpass-toggle">
-                            <span class="webex-denoise-slider"></span>
-                        </label>
-                    </div>
-                    <div class="webex-denoise-slider-box" id="offline-box-highpass-slider">
-                        <div class="webex-denoise-slider-meta">
-                            <span>Taglio basse frequenze:</span>
-                            <b id="offline-val-highpass-freq">90 Hz</b>
+                        <div class="webex-denoise-slider-box" id="offline-box-highpass-slider">
+                            <div class="webex-denoise-slider-meta">
+                                <span>Taglio basse frequenze:</span>
+                                <b id="offline-val-highpass-freq">140 Hz</b>
+                            </div>
+                            <input type="range" class="webex-denoise-range" id="offline-slider-highpass-freq" min="50" max="1200" step="10" value="140">
                         </div>
-                        <input type="range" class="webex-denoise-range" id="offline-slider-highpass-freq" min="30" max="250" step="5" value="90">
                     </div>
-                </div>
 
-                <!-- 3. Low-Pass Filter (De-Hiss) -->
-                <div class="webex-denoise-card" id="offline-card-lowpass">
-                    <div class="webex-denoise-card-header">
-                        <div class="webex-denoise-card-info">
-                            <div class="webex-denoise-card-title">
-                                <span>🔇 Filtro Anti-Fruscio (De-Hiss / Low-Pass)</span>
+                    <!-- Low-Pass Filter (De-Hiss) -->
+                    <div class="webex-denoise-dsp-item" id="offline-card-lowpass">
+                        <div class="webex-denoise-item-row">
+                            <div class="webex-denoise-item-info">
+                                <div class="webex-denoise-item-title">
+                                    <span>🔇 Anti-Fruscio (De-Hiss Low-Pass 24dB)</span>
+                                </div>
+                                <p class="webex-denoise-item-desc">Attenua sibili metallici, fruscio di fondo e rumore del microfono.</p>
                             </div>
-                            <p class="webex-denoise-card-desc">Attenua sibili metallici acuti, fruscii bianchi e rumore del preamplificatore del microfono.</p>
+                            <label class="webex-denoise-switch webex-denoise-switch-sm">
+                                <input type="checkbox" id="offline-denoise-lowpass-toggle">
+                                <span class="webex-denoise-slider"></span>
+                            </label>
                         </div>
-                        <label class="webex-denoise-switch">
-                            <input type="checkbox" id="offline-denoise-lowpass-toggle">
-                            <span class="webex-denoise-slider"></span>
-                        </label>
-                    </div>
-                    <div class="webex-denoise-slider-box" id="offline-box-lowpass-slider">
-                        <div class="webex-denoise-slider-meta">
-                            <span>Taglio alte frequenze:</span>
-                            <b id="offline-val-lowpass-freq">8000 Hz</b>
+                        <div class="webex-denoise-slider-box" id="offline-box-lowpass-slider">
+                            <div class="webex-denoise-slider-meta">
+                                <span>Taglio alte frequenze:</span>
+                                <b id="offline-val-lowpass-freq">4500 Hz</b>
+                            </div>
+                            <input type="range" class="webex-denoise-range" id="offline-slider-lowpass-freq" min="1000" max="12000" step="100" value="4500">
                         </div>
-                        <input type="range" class="webex-denoise-range" id="offline-slider-lowpass-freq" min="4000" max="14000" step="250" value="8000">
                     </div>
-                </div>
 
-                <!-- 4. Noise Gate (Silenziatore Pause) -->
-                <div class="webex-denoise-card" id="offline-card-gate">
-                    <div class="webex-denoise-card-header">
-                        <div class="webex-denoise-card-info">
-                            <div class="webex-denoise-card-title">
-                                <span>🤫 Noise Gate (Silenziamento Pause)</span>
+                    <!-- Noise Gate (Silenziatore Pause) -->
+                    <div class="webex-denoise-dsp-item" id="offline-card-gate">
+                        <div class="webex-denoise-item-row">
+                            <div class="webex-denoise-item-info">
+                                <div class="webex-denoise-item-title">
+                                    <span>🤫 Noise Gate (Silenziamento Pause)</span>
+                                </div>
+                                <p class="webex-denoise-item-desc">Azzera il rumore residuo dell'aula nei secondi in cui il docente non parla.</p>
                             </div>
-                            <p class="webex-denoise-card-desc">Azzera il rumore residuo dell'aula nei secondi in cui il professore non parla.</p>
+                            <label class="webex-denoise-switch webex-denoise-switch-sm">
+                                <input type="checkbox" id="offline-denoise-gate-toggle">
+                                <span class="webex-denoise-slider"></span>
+                            </label>
                         </div>
-                        <label class="webex-denoise-switch">
-                            <input type="checkbox" id="offline-denoise-gate-toggle">
-                            <span class="webex-denoise-slider"></span>
-                        </label>
-                    </div>
-                    <div class="webex-denoise-slider-box" id="offline-box-gate-slider">
-                        <div class="webex-denoise-slider-meta">
-                            <span>Soglia di attivazione:</span>
-                            <b id="offline-val-gate-thresh">-45 dB</b>
+                        <div class="webex-denoise-slider-box" id="offline-box-gate-slider">
+                            <div class="webex-denoise-slider-meta">
+                                <span>Soglia di apertura gate:</span>
+                                <b id="offline-val-gate-thresh">-42 dB</b>
+                            </div>
+                            <input type="range" class="webex-denoise-range" id="offline-slider-gate-thresh" min="-65" max="-20" step="1" value="-42">
                         </div>
-                        <input type="range" class="webex-denoise-range" id="offline-slider-gate-thresh" min="-65" max="-25" step="1" value="-45">
                     </div>
                 </div>
             </div>

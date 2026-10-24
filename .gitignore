@@ -29,3 +29,6 @@ scratch/
 # Secrets & environment
 .env
 .env.*
+
+# Chrome unpacked metadata
+_metadata/

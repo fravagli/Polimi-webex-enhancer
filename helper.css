@@ -1520,42 +1520,44 @@ video.webex-zoomed,
     transition: none !important;
 }
 
-/* In-Page File Explorer Modal (Liquid Glass) */
+/* In-Page File Explorer Modal (Liquid Glass - Complete Layout Refactor) */
 .webex-explorer-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(4, 7, 15, 0.78);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: rgba(4, 7, 15, 0.82);
+    backdrop-filter: blur(26px);
+    -webkit-backdrop-filter: blur(26px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2147483647;
     padding: 20px;
-    animation: webexExplFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: webexExplFadeIn 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
 }
 
 @keyframes webexExplFadeIn {
-    from { opacity: 0; transform: scale(0.96); }
+    from { opacity: 0; transform: scale(0.97); }
     to { opacity: 1; transform: scale(1); }
 }
 
 .webex-explorer-modal {
     background: rgba(13, 19, 33, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.16);
-    border-top: 1px solid rgba(255, 255, 255, 0.38);
+    border-top: 1px solid rgba(56, 189, 248, 0.45);
     border-radius: 20px;
-    width: 860px;
+    width: 900px;
     max-width: 95vw;
-    height: 580px;
+    height: 620px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    box-sizing: border-box;
 }
 
 .webex-explorer-header {
@@ -1566,12 +1568,16 @@ video.webex-zoomed,
     justify-content: space-between;
     gap: 12px;
     background: rgba(255, 255, 255, 0.03);
+    flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .webex-explorer-title-box {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .webex-explorer-title {
@@ -1581,20 +1587,26 @@ video.webex-zoomed,
     display: flex;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .webex-explorer-body {
-    flex: 1;
+    flex: 1 1 0%;
     display: flex;
     overflow: hidden;
+    min-height: 0;
 }
 
 .webex-explorer-sidebar {
-    width: 220px;
+    width: 230px;
+    min-width: 200px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(10, 14, 24, 0.6);
+    background: rgba(10, 14, 24, 0.65);
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
 }
 
 .webex-explorer-sidebar-header {
@@ -1608,6 +1620,7 @@ video.webex-zoomed,
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
 }
 
 .webex-explorer-folder-list {
@@ -1623,15 +1636,24 @@ video.webex-zoomed,
     padding: 8px 12px;
     border-radius: 8px;
     color: #cbd5e1;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
     transition: all 0.15s ease;
     border: 1px solid transparent;
+    min-width: 0;
+}
+
+.webex-explorer-folder-item > span:first-child {
+    flex: 1 1 0%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .webex-explorer-folder-item:hover {
@@ -1647,10 +1669,11 @@ video.webex-zoomed,
 }
 
 .webex-explorer-content {
-    flex: 1;
+    flex: 1 1 0%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-width: 0;
 }
 
 .webex-explorer-toolbar {
@@ -1659,8 +1682,37 @@ video.webex-zoomed,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
     background: rgba(255, 255, 255, 0.02);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.webex-explorer-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+#explorer-current-folder-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.webex-explorer-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .webex-explorer-sort-select {
@@ -1672,42 +1724,49 @@ video.webex-zoomed,
     padding: 5px 8px;
     outline: none;
     cursor: pointer;
+    max-width: 170px;
 }
 
 .webex-explorer-file-list {
-    flex: 1;
+    flex: 1 1 0%;
     overflow-y: auto;
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    min-height: 0;
 }
 
 .webex-explorer-card {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 12px;
-    padding: 12px 14px;
+    border-radius: 14px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    transition: all 0.15s ease;
+    gap: 16px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
 }
 
 .webex-explorer-card:hover {
-    background: rgba(56, 189, 248, 0.1);
-    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.09);
+    border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transform: translateY(-1px);
 }
 
 .webex-explorer-card-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    flex: 1;
+    gap: 6px;
+    flex: 1 1 0%;
     min-width: 0;
+    overflow: hidden;
 }
 
 .webex-explorer-card-title {
@@ -1717,6 +1776,8 @@ video.webex-zoomed,
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.35;
+    width: 100%;
 }
 
 .webex-explorer-card-meta {
@@ -1724,20 +1785,42 @@ video.webex-zoomed,
     color: #94a3b8;
     display: flex;
     align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    min-width: 0;
+    line-height: 1.4;
+}
+
+.webex-card-folder-badge {
+    background: rgba(56, 189, 248, 0.18);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 1px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 10.5px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .webex-explorer-card-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 /* Liquid Glass Folder Pill Button */
 .webex-folder-pill-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -1752,6 +1835,9 @@ video.webex-zoomed,
     outline: none;
     user-select: none;
     white-space: nowrap;
+    max-width: 160px;
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
 .webex-folder-pill-btn:hover {
@@ -1766,14 +1852,50 @@ video.webex-zoomed,
     transform: scale(0.97);
 }
 
+.webex-folder-pill-btn .pill-name {
+    display: inline-block;
+    max-width: 105px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
 .webex-folder-pill-btn .pill-chevron {
     font-size: 9px;
     opacity: 0.75;
+    flex-shrink: 0;
     transition: transform 0.2s ease;
 }
 
 .webex-folder-pill-btn.is-active .pill-chevron {
     transform: rotate(180deg);
+}
+
+@media (max-width: 680px) {
+    .webex-explorer-modal {
+        width: 100%;
+        height: 94vh;
+        border-radius: 14px;
+    }
+    .webex-explorer-body {
+        flex-direction: column;
+    }
+    .webex-explorer-sidebar {
+        width: 100%;
+        max-height: 140px;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .webex-explorer-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .webex-explorer-card-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
 }
 
 /* Liquid Glass Floating Dropdown */
@@ -3689,66 +3811,91 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
     box-shadow: 0 0 14px rgba(16, 185, 129, 0.4) !important;
 }
 
-.webex-denoise-overlay {
+/* Floating Draggable Liquid Glass Panel (No full-screen blur) */
+.webex-denoise-panel {
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: rgba(0, 0, 0, 0.75) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-    z-index: 2147483647 !important;
+    top: 65px;
+    right: 24px;
+    width: 420px;
+    min-width: 320px !important;
+    max-width: min(94vw, 720px) !important;
+    min-height: 280px !important;
+    max-height: calc(100vh - 40px) !important;
+    background: rgba(13, 19, 33, 0.88) !important;
+    backdrop-filter: blur(36px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 30px rgba(56, 189, 248, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
     display: none !important;
-    align-items: center !important;
-    justify-content: center !important;
-    animation: webexFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.webex-denoise-overlay.is-open {
-    display: flex !important;
-}
-
-.webex-denoise-modal {
-    background: rgba(15, 23, 42, 0.92) !important;
-    backdrop-filter: blur(28px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    border-radius: 20px !important;
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-    width: 92% !important;
-    max-width: 580px !important;
-    max-height: 88vh !important;
-    overflow-y: auto !important;
-    padding: 22px 24px !important;
+    flex-direction: column !important;
+    z-index: 2147483647 !important;
+    resize: both !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
     color: #f8fafc !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-    animation: webexScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    animation: webexDenoiseSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+.webex-denoise-panel::after {
+    content: "" !important;
+    position: absolute !important;
+    right: 5px !important;
+    bottom: 5px !important;
+    width: 12px !important;
+    height: 12px !important;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.45) 1.5px, transparent 1.5px) !important;
+    background-size: 4px 4px !important;
+    pointer-events: none !important;
+    opacity: 0.7 !important;
+}
+
+.webex-denoise-panel.is-open {
+    display: flex !important;
+}
+
+@keyframes webexDenoiseSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Draggable Header */
 .webex-denoise-header {
+    padding: 13px 18px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding-bottom: 14px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    margin-bottom: 16px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    cursor: grab !important;
+    user-select: none !important;
+}
+
+.webex-denoise-header:active {
+    cursor: grabbing !important;
 }
 
 .webex-denoise-title-box {
     display: flex !important;
     align-items: center !important;
-    gap: 12px !important;
+    gap: 10px !important;
 }
 
 .webex-denoise-icon {
-    font-size: 26px !important;
+    font-size: 24px !important;
     line-height: 1 !important;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45)) !important;
 }
 
 .webex-denoise-title {
-    font-size: 16px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
     color: #ffffff !important;
     margin: 0 !important;
@@ -3756,9 +3903,9 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
 }
 
 .webex-denoise-subtitle {
-    font-size: 11px !important;
+    font-size: 10.5px !important;
     color: #94a3b8 !important;
-    margin: 2px 0 0 0 !important;
+    margin: 1px 0 0 0 !important;
 }
 
 .webex-denoise-header-actions {
@@ -3767,63 +3914,72 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
     gap: 10px !important;
 }
 
-.webex-denoise-status-badge {
-    font-size: 10.5px !important;
-    font-weight: 700 !important;
-    padding: 3px 10px !important;
+/* Master On/Off Switch in Header */
+.webex-denoise-master-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    padding: 3px 8px 3px 10px !important;
     border-radius: 9999px !important;
-    background: rgba(148, 163, 184, 0.15) !important;
-    border: 1px solid rgba(148, 163, 184, 0.25) !important;
-    color: #cbd5e1 !important;
     transition: all 0.2s ease !important;
 }
 
-.webex-denoise-status-badge.active {
-    background: rgba(16, 185, 129, 0.2) !important;
-    border-color: rgba(16, 185, 129, 0.5) !important;
+.webex-denoise-master-wrap.active {
+    background: rgba(16, 185, 129, 0.18) !important;
+    border-color: rgba(52, 211, 153, 0.4) !important;
+}
+
+.webex-denoise-master-label {
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px !important;
+    color: #94a3b8 !important;
+}
+
+.webex-denoise-master-wrap.active .webex-denoise-master-label {
     color: #34d399 !important;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
+    text-shadow: 0 0 8px rgba(52, 211, 153, 0.4) !important;
 }
 
 .webex-denoise-close-btn {
-    background: rgba(255, 255, 255, 0.06) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
     border-radius: 50% !important;
-    width: 28px !important;
-    height: 28px !important;
+    width: 26px !important;
+    height: 26px !important;
     color: #cbd5e1 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     cursor: pointer !important;
-    transition: all 0.15s ease !important;
+    transition: all 0.18s ease !important;
 }
 
 .webex-denoise-close-btn:hover {
-    background: rgba(239, 68, 68, 0.2) !important;
-    border-color: rgba(239, 68, 68, 0.4) !important;
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
     color: #fca5a5 !important;
     transform: scale(1.08) !important;
 }
 
+/* Presets Row */
 .webex-denoise-presets-box {
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
-    border-radius: 12px !important;
-    padding: 10px 12px !important;
-    margin-bottom: 16px !important;
+    padding: 10px 18px !important;
     display: flex !important;
     align-items: center !important;
-    flex-wrap: wrap !important;
     gap: 8px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    background: rgba(0, 0, 0, 0.16) !important;
 }
 
 .webex-denoise-presets-label {
     font-size: 11px !important;
     font-weight: 700 !important;
     color: #94a3b8 !important;
-    margin-right: 4px !important;
+    flex-shrink: 0 !important;
 }
 
 .webex-denoise-presets-chips {
@@ -3835,10 +3991,10 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
 
 .webex-denoise-chip {
     background: rgba(255, 255, 255, 0.06) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
     border-radius: 8px !important;
-    color: #e2e8f0 !important;
-    padding: 4px 10px !important;
+    color: #cbd5e1 !important;
+    padding: 4px 9px !important;
     font-size: 11px !important;
     font-weight: 600 !important;
     cursor: pointer !important;
@@ -3853,35 +4009,57 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
 }
 
 .webex-denoise-chip.active {
-    background: linear-gradient(135deg, rgba(2, 132, 199, 0.45), rgba(56, 189, 248, 0.3)) !important;
+    background: linear-gradient(135deg, rgba(2, 132, 199, 0.5), rgba(56, 189, 248, 0.35)) !important;
     border-color: #38bdf8 !important;
     color: #ffffff !important;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.35) !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.35) !important;
 }
 
-.webex-denoise-chip.reset:hover {
-    background: rgba(239, 68, 68, 0.15) !important;
-    border-color: rgba(239, 68, 68, 0.4) !important;
-    color: #fca5a5 !important;
-}
-
+/* Sections Body */
 .webex-denoise-body {
+    padding: 14px 18px !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 12px !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+    transition: opacity 0.2s ease !important;
 }
 
-.webex-denoise-card {
-    background: rgba(255, 255, 255, 0.035) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 14px !important;
+.webex-denoise-body::-webkit-scrollbar {
+    width: 6px !important;
+}
+
+.webex-denoise-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-radius: 9999px !important;
+}
+
+.webex-denoise-panel.is-master-off .webex-denoise-body {
+    opacity: 0.52 !important;
+}
+
+/* 1. AI Hero Card */
+.webex-denoise-section-ai {
+    background: linear-gradient(135deg, rgba(30, 27, 75, 0.45), rgba(15, 23, 42, 0.55)) !important;
+    border: 1.5px solid rgba(129, 140, 248, 0.3) !important;
+    border-radius: 16px !important;
     padding: 13px 15px !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
     transition: all 0.2s ease !important;
 }
 
-.webex-denoise-card:hover {
-    border-color: rgba(255, 255, 255, 0.14) !important;
-    background: rgba(255, 255, 255, 0.05) !important;
+.webex-denoise-section-ai:hover {
+    border-color: rgba(129, 140, 248, 0.5) !important;
+    box-shadow: 0 4px 22px rgba(99, 102, 241, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.webex-denoise-section-ai.is-active {
+    background: linear-gradient(135deg, rgba(49, 46, 129, 0.55), rgba(15, 23, 42, 0.65)) !important;
+    border-color: #818cf8 !important;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 .webex-denoise-card-header {
@@ -3898,37 +4076,165 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
 .webex-denoise-card-title {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
-    font-size: 13.5px !important;
+    flex-wrap: wrap !important;
+    gap: 7px !important;
+    font-size: 13px !important;
     font-weight: 700 !important;
     color: #f1f5f9 !important;
 }
 
-.webex-denoise-pill {
+.webex-denoise-section-icon {
+    font-size: 16px !important;
+}
+
+.webex-denoise-pill.ai-pill {
+    background: rgba(129, 140, 248, 0.2) !important;
+    border: 1px solid rgba(129, 140, 248, 0.45) !important;
+    color: #a5b4fc !important;
     font-size: 9.5px !important;
     font-weight: 700 !important;
-    background: rgba(56, 189, 248, 0.15) !important;
-    border: 1px solid rgba(56, 189, 248, 0.3) !important;
-    color: #38bdf8 !important;
-    padding: 1px 6px !important;
+    padding: 2px 7px !important;
     border-radius: 6px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
 }
 
 .webex-denoise-card-desc {
     font-size: 11px !important;
     color: #94a3b8 !important;
     margin: 4px 0 0 0 !important;
-    line-height: 1.4 !important;
+    line-height: 1.35 !important;
 }
 
-/* iOS Style Switch */
-.webex-denoise-switch {
+/* 2. DSP Master Section */
+.webex-denoise-section-dsp {
+    background: rgba(255, 255, 255, 0.035) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 16px !important;
+    padding: 13px 15px !important;
+    transition: all 0.2s ease !important;
+}
+
+.webex-denoise-dsp-master-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding-bottom: 11px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    margin-bottom: 11px !important;
+}
+
+.webex-denoise-dsp-master-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+}
+
+.webex-denoise-group-name {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #f1f5f9 !important;
+    display: block !important;
+}
+
+.webex-denoise-group-sub {
+    font-size: 10px !important;
+    color: #94a3b8 !important;
+    display: block !important;
+    margin-top: 1px !important;
+}
+
+.webex-denoise-dsp-toggle-box {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+
+.webex-denoise-sub-label {
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    color: #cbd5e1 !important;
+}
+
+.webex-denoise-dsp-items {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    transition: opacity 0.2s ease !important;
+}
+
+.webex-denoise-section-dsp.is-dsp-off .webex-denoise-dsp-items {
+    opacity: 0.45 !important;
+    pointer-events: none !important;
+}
+
+.webex-denoise-dsp-item {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    transition: all 0.18s ease !important;
+}
+
+.webex-denoise-dsp-item:hover {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.webex-denoise-dsp-item.is-active {
+    border-color: rgba(56, 189, 248, 0.45) !important;
+    background: rgba(14, 116, 144, 0.18) !important;
+}
+
+.webex-denoise-item-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+}
+
+.webex-denoise-item-info {
+    flex: 1 !important;
+}
+
+.webex-denoise-item-title {
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    color: #e2e8f0 !important;
+}
+
+.webex-denoise-item-desc {
+    font-size: 10.5px !important;
+    color: #94a3b8 !important;
+    margin: 2px 0 0 0 !important;
+    line-height: 1.35 !important;
+}
+
+/* HIGH-CONTRAST SWITCHES (Readable in inactive state!) */
+.webex-denoise-switch,
+.webex-denoise-switch-sm,
+.webex-denoise-switch-master {
     position: relative !important;
     display: inline-block !important;
-    width: 44px !important;
-    height: 24px !important;
     flex-shrink: 0 !important;
     cursor: pointer !important;
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+}
+
+.webex-denoise-switch {
+    width: 44px !important;
+    height: 24px !important;
+}
+
+.webex-denoise-switch-sm {
+    width: 38px !important;
+    height: 22px !important;
+}
+
+.webex-denoise-switch-master {
+    width: 42px !important;
+    height: 24px !important;
 }
 
 .webex-denoise-switch input {
@@ -3937,6 +4243,7 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
     height: 0 !important;
 }
 
+/* Inactive state: Slate-700 track with Slate-400 visible border */
 .webex-denoise-slider {
     position: absolute !important;
     cursor: pointer !important;
@@ -3944,62 +4251,400 @@ body:has(#webex-helper-toolbar-container:not(.collapsed)) #webex-quick-actions-b
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    background-color: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    transition: 0.25s !important;
+    background-color: #334155 !important;
+    border: 1.5px solid #64748b !important;
     border-radius: 24px !important;
+    box-sizing: border-box !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
 .webex-denoise-slider:before {
     position: absolute !important;
     content: "" !important;
-    height: 18px !important;
-    width: 18px !important;
-    left: 2px !important;
-    bottom: 2px !important;
+    height: 14px !important;
+    width: 14px !important;
+    left: 3px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    margin: auto 0 !important;
     background-color: #ffffff !important;
-    transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
     border-radius: 50% !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.22s ease !important;
 }
 
+.webex-denoise-switch-sm .webex-denoise-slider:before {
+    height: 12px !important;
+    width: 12px !important;
+    left: 3px !important;
+}
+
+.webex-denoise-switch-master .webex-denoise-slider:before {
+    height: 14px !important;
+    width: 14px !important;
+    left: 3px !important;
+}
+
+/* Active state: Vibrant Cyan glow */
 .webex-denoise-switch input:checked + .webex-denoise-slider {
     background-color: #0284c7 !important;
     border-color: #38bdf8 !important;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5), inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
 
 .webex-denoise-switch input:checked + .webex-denoise-slider:before {
     transform: translateX(20px) !important;
 }
 
+.webex-denoise-switch-sm input:checked + .webex-denoise-slider:before {
+    transform: translateX(16px) !important;
+}
+
+.webex-denoise-switch-master input:checked + .webex-denoise-slider:before {
+    transform: translateX(18px) !important;
+}
+
 /* Slider Controls */
 .webex-denoise-slider-box {
-    margin-top: 10px !important;
-    padding-top: 10px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
 .webex-denoise-slider-meta {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    font-size: 11px !important;
+    font-size: 10.5px !important;
     color: #94a3b8 !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 5px !important;
 }
 
 .webex-denoise-slider-meta b {
     color: #38bdf8 !important;
     font-weight: 700 !important;
+    font-size: 11px !important;
 }
 
 .webex-denoise-range {
     width: 100% !important;
-    height: 5px !important;
+    height: 4px !important;
     border-radius: 4px !important;
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.16) !important;
     outline: none !important;
     accent-color: #38bdf8 !important;
     cursor: pointer !important;
+    transition: background 0.15s ease !important;
+}
+
+.webex-denoise-range:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+}
+
+
+/* Fullscreen Visibility & Top-Layer Positioning */
+:fullscreen .webex-quick-actions-bar,
+:-webkit-full-screen .webex-quick-actions-bar {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    pointer-events: auto !important;
+}
+
+:fullscreen .webex-helper-toolbar-container,
+:-webkit-full-screen .webex-helper-toolbar-container {
+    z-index: 2147483647 !important;
+}
+
+:fullscreen .webex-denoise-panel,
+:-webkit-full-screen .webex-denoise-panel {
+    z-index: 2147483647 !important;
+}
+
+/* ==========================================================================
+   TRANSCRIPTION EXPORT MODAL (Liquid Glass)
+   ========================================================================== */
+.webex-export-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(4, 7, 15, 0.8);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483647;
+    padding: 16px;
+    animation: webexExportFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+@keyframes webexExportFadeIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.webex-export-modal {
+    background: rgba(13, 19, 33, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-top: 1px solid rgba(56, 189, 248, 0.5);
+    border-radius: 20px;
+    width: 520px;
+    max-width: 95vw;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-sizing: border-box;
+}
+
+.webex-export-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.webex-export-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.webex-export-header-title h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: -0.2px;
+}
+
+.webex-export-header-title p {
+    margin: 2px 0 0 0;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.webex-export-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+.webex-export-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.webex-export-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.webex-export-seg-control {
+    display: flex;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 4px;
+}
+
+.webex-export-seg-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-align: center;
+    outline: none;
+    user-select: none;
+}
+
+.webex-export-seg-btn:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.webex-export-seg-btn.active {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #38bdf8;
+    box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
+    font-weight: 700;
+}
+
+.webex-export-toggle-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.webex-export-toggle-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.webex-export-toggle-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.webex-export-toggle-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.webex-export-toggle-desc {
+    font-size: 10.5px;
+    color: #94a3b8;
+}
+
+.webex-export-switch {
+    position: relative;
+    width: 38px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.webex-export-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.webex-export-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.14);
+    border-radius: 20px;
+    transition: 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.webex-export-slider:before {
+    position: absolute;
+    content: '';
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+
+.webex-export-switch input:checked + .webex-export-slider {
+    background-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.webex-export-switch input:checked + .webex-export-slider:before {
+    transform: translateX(18px);
+}
+
+.webex-export-preview-box {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #cbd5e1;
+    max-height: 110px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    user-select: text;
+}
+
+.webex-export-footer {
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.webex-export-btn-primary {
+    background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 8px 16px;
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+}
+
+.webex-export-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
+}
+
+.webex-export-btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webex-export-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+}
+
+.webex-export-btn-secondary.copied {
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-color: #10b981 !important;
+    color: #34d399 !important;
 }
